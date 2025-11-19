@@ -43,3 +43,15 @@ hook.Add( "PlayerButtonDown", "Kill", function( ply, button )
 
     RunConsoleCommand("kill")
 end)
+
+
+
+hook.Add( "PlayerButtonDown", "Spectator Death Match", function( ply, button )
+    if button != KEY_O then return end
+
+    if CLIENT and not IsFirstTimePredicted() then
+        return
+    end
+
+    ply:ConCommand('say !dm')
+end)
