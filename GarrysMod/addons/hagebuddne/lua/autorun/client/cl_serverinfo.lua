@@ -7,7 +7,6 @@ surface.CreateFont("hagebuddne_ServerInfo", {
     extended = true,
 })
 
--- Große Sterne (bleiben groß)
 surface.CreateFont("hagebuddne_ServerInfo_Stars", {
     font = "Zemalgo Oswald",
     size = 54,
@@ -20,7 +19,6 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     local scrW, scrH = ScrW(), ScrH()
     local margin = 10
 
-    -- Segmente
     local star1  = "⭐"
     local title  = " Hagebuddne "
     local bar    = "|"
@@ -43,15 +41,12 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     local totalW = w1 + w2 + w3 + w4 + w5
     local totalH = select(2, surface.GetTextSize(title))
 
-    -- Boxgröße
     local boxW = totalW + 24
     local boxH = totalH + 20
 
-    -- Box oben links mit 10px Abstand
     local boxX = margin
     local boxY = margin
 
-    -- Text-Startposition relativ zur Box
     local x = boxX + 12
     local y = boxY + 10
 
@@ -77,7 +72,6 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     surface.DrawText(star1)
     x = x + w1
 
-    -- "Hagebuddne"
     surface.SetFont("hagebuddne_ServerInfo")
     surface.SetTextColor(white)
     surface.SetTextPos(x, y)
@@ -90,13 +84,11 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     surface.DrawText(bar)
     x = x + w3
 
-    -- Domain
     surface.SetTextColor(white)
     surface.SetTextPos(x, y)
     surface.DrawText(domain)
     x = x + w4
 
-    -- ⭐ hinten
     surface.SetFont("hagebuddne_ServerInfo_Stars")
     surface.SetTextColor(blue)
     surface.SetTextPos(x, y - 14)
