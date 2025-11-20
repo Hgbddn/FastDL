@@ -1,7 +1,6 @@
--- Normale Text-Font (etwas kleiner)
 surface.CreateFont("hagebuddne_ServerInfo", {
     font = "Zemalgo Oswald",
-    size = 28,          -- wie zuvor
+    size = 28,
     weight = 300,
     antialias = true,
     extended = true,
@@ -25,10 +24,6 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     local domain = " zemalgo.com/ttt "
     local star2  = "⭐"
 
-    ---------------------------------------------------
-    -- BREITE BERECHNEN
-    ---------------------------------------------------
-
     surface.SetFont("hagebuddne_ServerInfo_Stars")
     local w1 = surface.GetTextSize(star1)
     local w5 = surface.GetTextSize(star2)
@@ -50,22 +45,11 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     local x = boxX + 12
     local y = boxY + 10
 
-    ---------------------------------------------------
-    -- Hintergrundbox
-    ---------------------------------------------------
     draw.RoundedBox(12, boxX, boxY, boxW, boxH, Color(0, 0, 0, 169))
 
-    ---------------------------------------------------
-    -- Farben
-    ---------------------------------------------------
     local white = Color(255, 255, 255, 240)
     local blue  = Color(0x56, 0x70, 0xB2, 255)
 
-    ---------------------------------------------------
-    -- ZEICHEN
-    ---------------------------------------------------
-
-    -- ⭐ vorne
     surface.SetFont("hagebuddne_ServerInfo_Stars")
     surface.SetTextColor(blue)
     surface.SetTextPos(x, y - 14)
