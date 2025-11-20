@@ -1,6 +1,6 @@
 surface.CreateFont("hagebuddne_ServerInfo", {
     font = "Zemalgo Oswald",
-    size = 28,
+    size = 32,     
     weight = 300,
     antialias = true,
     extended = true,
@@ -8,7 +8,7 @@ surface.CreateFont("hagebuddne_ServerInfo", {
 
 surface.CreateFont("hagebuddne_ServerInfo_Stars", {
     font = "Zemalgo Oswald",
-    size = 54,
+    size = 66,
     weight = 300,
     antialias = true,
     extended = true,
@@ -34,16 +34,15 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     local w4 = surface.GetTextSize(domain)
 
     local totalW = w1 + w2 + w3 + w4 + w5
-    local totalH = select(2, surface.GetTextSize(title))
 
+    local boxH = 48
     local boxW = totalW + 24
-    local boxH = totalH + 20
 
     local boxX = margin
     local boxY = margin
 
     local x = boxX + 12
-    local y = boxY + 10
+    local y = boxY + 6
 
     draw.RoundedBox(12, boxX, boxY, boxW, boxH, Color(0, 0, 0, 169))
 
@@ -52,7 +51,7 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
 
     surface.SetFont("hagebuddne_ServerInfo_Stars")
     surface.SetTextColor(blue)
-    surface.SetTextPos(x, y - 14)
+    surface.SetTextPos(x, y - 18)
     surface.DrawText(star1)
     x = x + w1
 
@@ -62,7 +61,6 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
     surface.DrawText(title)
     x = x + w2
 
-    -- |
     surface.SetTextColor(blue)
     surface.SetTextPos(x, y)
     surface.DrawText(bar)
@@ -75,6 +73,6 @@ hook.Add("HUDPaint", "Hagebuddne_HUD_ServerInfo", function()
 
     surface.SetFont("hagebuddne_ServerInfo_Stars")
     surface.SetTextColor(blue)
-    surface.SetTextPos(x, y - 14)
+    surface.SetTextPos(x, y - 18)
     surface.DrawText(star2)
 end)
