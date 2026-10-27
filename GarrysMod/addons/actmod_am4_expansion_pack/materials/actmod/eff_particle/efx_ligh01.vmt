@@ -1,0 +1,5 @@
+"UnlitGeneric"
+{
+	"$basetexture" "actmod/eff_particle/efx_ligh01"
+	"$vertexalpha" 1
+}

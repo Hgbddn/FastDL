@@ -1,0 +1,7 @@
+"UnlitGeneric"
+{
+	"$baseTexture" "actmod/eff_particle/p_i_ligtstar_05"
+	//"$additive" 1
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+}

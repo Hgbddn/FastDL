@@ -1,0 +1,10 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/actmod/prop/smenergize/mw"
+	"$selfillum" "1"
+	"$selfillumfresnel" "1"
+	"$model" "1"
+	"$nocull" "1"
+	"$additive" "1"
+   	"$vertexcolor" "1"
+}

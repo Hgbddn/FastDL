@@ -1,0 +1,23 @@
+"VertexlitGeneric"
+//"UnlitGeneric"
+{
+	"$basetexture" "models/actmod/prop/dragrace_gadget/mt_m"
+   	//"$basetexturetransform" "center 0 0 scale 1 3 rotate 0 translate 0 0"
+	$vertexcolor 1
+	$vertexalpha 1
+
+    "$detail" "models/actmod/prop/dragrace_gadget/mt_e"
+    "$detailscale" "0.1"
+    "$detailblendfactor" "1"
+    "$detailblendmode" "45"
+
+    "Proxies"
+    {
+	"TextureScroll"
+        {
+            "texturescrollvar" "$basetexturetransform"
+            "texturescrollrate" "2.5"
+            "texturescrollangle" "90"
+        }
+    }
+}

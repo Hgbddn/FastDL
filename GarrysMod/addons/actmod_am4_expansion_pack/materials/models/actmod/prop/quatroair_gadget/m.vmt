@@ -1,0 +1,14 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/actmod/prop/quatroair_gadget/m_d"
+	"$bumpmap" "models/actmod/prop/quatroair_gadget/m_n"
+
+	"$model" "1"
+	"$phong" "1"
+	"$phongexponent" "10"
+	"$phongboost" "0.9"
+	"$phongalbedotint" "1"
+	"$phongtint" "[.5 .7 .7]"
+	"$phongfresnelranges"	"[0.8 6 10]"
+	"$ambientocclusion" "1"
+}

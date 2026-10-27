@@ -1,0 +1,19 @@
+"UnlitGeneric"
+{
+	"$basetexture" "models/actmod/prop/timeticking_gadget/mt_f001"
+    	"$translucent" "1"
+   	"$vertexcolor" "1"
+    	"$vertexalpha" "1"
+	$nocull "1"
+
+	"Proxies"
+	{
+		"Sine"
+		{
+			"resultVar" "$alpha"
+			"sinePeriod" "1.1"
+			"sineMin" "0.3"
+			"sineMax" "0.7"
+		}
+	}
+}

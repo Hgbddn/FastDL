@@ -1,0 +1,21 @@
+"UnlitGeneric"
+//VertexlitGeneric
+{
+	"$basetexture" "models/actmod/glow"
+    	//"$translucent" "1"
+   	//"$vertexcolor" "1"
+    	//"$vertexalpha" "1"
+	"$color2" "[1 0.8 0.6]"
+	//"$alpha" "0.5"
+    "Proxies"
+    {
+        "Sine"               // موجة تتذبذب بشكل دوري
+        {
+            "resultVar" "$alpha"     // المتغير الذي تعدّله
+            "sinePeriod" "1.1"       // سرعة الوميض (كلما قل الرقم زادت السرعة)
+            "sineMin" "0.3"          // أقل قيمة للشفافية
+            "sineMax" "0.6"          // أعلى قيمة للشفافية
+        }
+    }
+
+}

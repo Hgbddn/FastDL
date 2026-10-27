@@ -1,0 +1,28 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/actmod/prop/dragrace_gadget/mt_d"
+	$vertexcolor 1
+	"$model" "1"
+	"$phong" "1"
+	"$phongexponent" "50"
+	"$phongboost" "0.2"
+	"$phongalbedotint" "2"
+	"$phongtint" "[.5 .5 .5]"
+	"$phongfresnelranges"	"[0.5 10 10]"
+	"$ambientocclusion" "1"
+
+    "$detail" "models/actmod/prop/dragrace_gadget/mt_e"
+    "$detailscale" "0.7"
+    "$detailblendfactor" "1"
+    "$detailblendmode" "5"
+
+    "Proxies"
+    {
+	"TextureScroll"
+        {
+            "texturescrollvar" "$detailtexturetransform"
+            "texturescrollrate" "1.5"
+            "texturescrollangle" "40"
+        }
+    }
+}

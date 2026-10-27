@@ -1,0 +1,6 @@
+UnlitGeneric
+{
+	$basetexture "actmod\eff_particle\ih_00"
+	"$vertexalpha" 1
+	"$vertexcolor" "1"
+}

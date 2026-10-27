@@ -1,0 +1,7 @@
+"UnlitGeneric"
+{
+	"$basetexture" "actmod/eff_particle/laser_tracer01"
+	//"$additive" 1
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+}

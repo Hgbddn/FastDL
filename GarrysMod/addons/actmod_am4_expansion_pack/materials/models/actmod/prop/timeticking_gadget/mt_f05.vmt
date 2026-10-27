@@ -1,0 +1,10 @@
+"UnlitGeneric"
+//VertexlitGeneric
+{
+	"$basetexture" "models/actmod/glow"
+    	//"$translucent" "1"
+   	//"$vertexcolor" "1"
+    	//"$vertexalpha" "1"
+	"$color2" "[1 0.8 0.6]"
+
+}

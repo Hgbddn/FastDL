@@ -1,0 +1,32 @@
+//"VertexlitGeneric"
+//"Aftershock"
+UnlitGeneric
+{
+	"$basetexture" "models/actmod/prop/timeticking_gadget/mt_f01"
+    	"$translucent" "1"
+    	//"$vertexalpha" "1"
+   	//"$vertexcolor" "1"
+  	//"$no_fullbright" "1" // اختياري
+    	//"$alphatest" "0"
+
+	//"$normalmap" "models/actmod/prop/timeticking_gadget/mt_f01"
+	//"$additive" 1
+	//"$vertexcolor" 1
+	//"$vertexalpha" 1
+  	//"$color2" "[1 1 1]"
+	//"$model" "1"
+	//"$refractamount" "0.0"
+	//"$colortint" "[2 2 2]"
+	//$alpha "0.7"
+
+	"Proxies"
+	{
+		"Sine"               // موجة تتذبذب بشكل دوري
+		{
+			"resultVar" "$alpha"     // المتغير الذي تعدّله
+			"sinePeriod" "1.1"       // سرعة الوميض (كلما قل الرقم زادت السرعة)
+			"sineMin" "0.4"          // أقل قيمة للشفافية
+			"sineMax" "0.7"          // أعلى قيمة للشفافية
+		}
+	}
+}
