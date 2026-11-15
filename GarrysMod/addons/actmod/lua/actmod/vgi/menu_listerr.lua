@@ -918,504 +918,289 @@ Actoji.OpenListErr = function(self,vrShow)
         GzMnu = 430
     end
 
-    self.MenuEror = vgui.Create("DFrame", self.Frame)
-    self.MenuEror:SetSize(250, 26)
-    self.MenuEror:SetPos(2, 2)
-    self.MenuEror:MakePopup()
-    self.MenuEror:SetTitle("")
-    self.MenuEror:ShowCloseButton(false)
-    self.MenuEror.DButn = vgui.Create("DButton", self.MenuEror)
-    self.MenuEror.DButn:SetPos(self.MenuEror:GetWide() - 65, 3)
-    self.MenuEror.DButn:SetSize(60, 20)
-    self.MenuEror.DButn:SetText(aR:T("ListOfRTRB_Show"))
-    self.MenuEror.DButn:SetDark(true)
-    self.MenuEror.DButn.Trgit = false
-    self.MenuEror.DButn.a = false
-    if Mar_TabDat(TLang, GetConVarString("actmod_cl_lang")) == false then
-		self.MenuEror:SetVisible(false)
-	end
-
-    self.MenuEror.DButn.DoClick = function(s)
-        if IsValid(self.MenuEror) then
-            if s.Trgit == false and s.a == false then
-                s.Trgit = true
-                s:SetText(aR:T("ListOfRTRB_Hide"))
-
-                self.MenuEror:SizeTo(250, (ply.DButtonRestart == true or not A_AM.ActMod.A_ActMod_RedyUse) and 382 or GzMnu, 0.2, 0, -1, function(t, sS)
-                    s.a = true
-                end)
-            elseif s.a == true then
-                s.Trgit = false
-                s:SetText(aR:T("ListOfRTRB_Show"))
-
-                self.MenuEror:SizeTo(250, 26, 0.2, 0, -1, function(t, sS)
-                    s.a = false
-                end)
+    -- Ersatz fuer "Liste fuer Anforderungen": Hinweis-Container im Clean HUD Stil
+    local function IsGermanLanguage()
+        if LANG and LANG.GetActiveLanguageName then
+            local active = string.lower(LANG.GetActiveLanguageName() or "")
+            if active ~= "" and active ~= "auto" then
+                return active == "de" or active == "deutsch" or active == "german"
             end
+        end
+        local cvLang = GetConVar("ttt_language")
+        if cvLang then
+            local cvLangStr = string.lower(cvLang:GetString() or "")
+            if cvLangStr ~= "" and cvLangStr ~= "auto" then
+                return cvLangStr == "de" or cvLangStr == "deutsch" or cvLangStr == "german"
+            end
+        end
+        if LANG and LANG.GetLanguage then
+            local tttLang = string.lower(LANG.GetLanguage() or "")
+            if tttLang ~= "" and tttLang ~= "auto" then
+                return tttLang == "de" or tttLang == "deutsch" or tttLang == "german"
+            end
+        end
+        local gLang = string.lower(GetConVarString("gmod_language") or "")
+        return gLang == "de" or gLang == "deutsch" or gLang == "german"
+    end
+
+    local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+
+    surface.CreateFont("ActMod_HUD_HintTitle", {
+        font = "Tahoma",
+        size = math.max(math.Round(14 * scale), 12),
+        weight = 700,
+        extended = true,
+        antialias = true
+    })
+    surface.CreateFont("ActMod_HUD_HintWarn", {
+        font = "Tahoma",
+        size = math.max(math.Round(17 * scale), 16),
+        weight = 700,
+        extended = true,
+        antialias = true
+    })
+
+    local font = "ActMod_HUD_HintTitle"
+    local fontWarn = "ActMod_HUD_HintWarn"
+
+    local isDE_init = IsGermanLanguage()
+    local hintText_init = isDE_init and "Rechtsklick auf ein Emote, um das Emote Men\195\188 zu \195\182ffnen." or "Right-click an emote to open the Emote Menu."
+    local warnText_init = isDE_init and "Das Emote Men\195\188 ist nur teilweise in das Hagebuddne HUD integriert!" or "The Emote Menu is only partially integrated into the Hagebuddne HUD!"
+
+    surface.SetFont(font)
+    local tw, th = surface.GetTextSize(hintText_init)
+    surface.SetFont(fontWarn)
+    local ww, wh = surface.GetTextSize(warnText_init)
+
+    local iconSize = math.Round(18 * scale)
+    local hintBoxW = tw + math.Round(26 * scale)
+    local hintBoxH = math.max(math.Round(28 * scale), 26)
+
+    local warnBoxW = iconSize + 8 + ww + math.Round(28 * scale)
+    local warnBoxH = math.max(math.Round(34 * scale), 32)
+
+    local function ComputeTargetPos(bW)
+        local sc = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        local topMargin = (appearance and appearance.GetGlobalScale and math.Round(10 * appearance.GetGlobalScale())) or 10
+
+        local roundInfoW = math.Round(110 * sc)
+        local roundInfoH = math.Round(72 * sc)
+        local roundInfoX = math.Round(ScrW() * 0.5 - roundInfoW * 0.5)
+        local roundInfoY = topMargin
+
+        local rInfo = hudelements and (hudelements.GetStored("clean_skin_roundinfo") or hudelements.GetStored("pure_skin_roundinfo"))
+        if rInfo and rInfo.GetPos and rInfo:GetPos().x > 0 then
+            roundInfoX = rInfo:GetPos().x
+            roundInfoY = rInfo:GetPos().y
+            roundInfoW = rInfo:GetSize().w
+            roundInfoH = rInfo:GetSize().h
+            topMargin = roundInfoY
+        end
+
+        local teamX = roundInfoX - roundInfoH
+        local teamInd = hudelements and (hudelements.GetStored("clean_skin_teamindicator") or hudelements.GetStored("pure_skin_teamindicator"))
+        if teamInd and teamInd.GetPos and teamInd:GetPos().x > 0 then
+            teamX = teamInd:GetPos().x
+        end
+
+        local msb = hudelements and (hudelements.GetStored("clean_skin_miniscoreboard") or hudelements.GetStored("pure_skin_miniscoreboard"))
+        local msbRight = roundInfoX + roundInfoW + roundInfoH
+        if msb and msb.GetPos and msb:GetPos().x > 0 then
+            msbRight = msb:GetPos().x + msb:GetSize().w
+        end
+
+        local folderX = _G.ActMod_FolderBarX or (msbRight + topMargin)
+        local folderY = _G.ActMod_FolderBarY or topMargin
+        local dist = folderX - msbRight
+        if dist <= 0 then dist = topMargin end
+
+        -- Obere Kante exakt denselben Abstand zum oberen Bildschirmrand wie der Ordner-Container
+        local targetScreenY = folderY
+        -- Rechte Kante hat denselben Abstand zu clean_skin_teamindicator wie Ordner-Container zu miniscoreboard
+        local targetRight = teamX - dist
+        local targetScreenX = targetRight - (bW or hintBoxW)
+        if targetScreenX < 10 then targetScreenX = 10 end
+
+        return targetScreenX, targetScreenY
+    end
+
+    -- Ermittelt das aktuell geoeffnete Fenster der 3 Ziel-Menues:
+    -- 1. Emote Menu (self.Underlay.Panel)
+    -- 2. Shortcut Buttons (A_AM.ActMod.ShortcutWindow / DBu.pgh)
+    -- 3. TeamDance List (A_AM.ActMod.ActGrpP.Frame)
+    local function GetActivePartialHUDWindow()
+        if IsValid(self.Underlay) and self.Underlay:IsVisible() and IsValid(self.Underlay.Panel) and self.Underlay.Panel:IsVisible() then
+            return self.Underlay.Panel
+        end
+        if A_AM and A_AM.ActMod and IsValid(A_AM.ActMod.ShortcutWindow) and A_AM.ActMod.ShortcutWindow:IsVisible() then
+            return A_AM.ActMod.ShortcutWindow
+        end
+        if A_AM and A_AM.ActMod and A_AM.ActMod.ActGrpP and IsValid(A_AM.ActMod.ActGrpP.Frame) and A_AM.ActMod.ActGrpP.Frame:IsVisible() then
+            return A_AM.ActMod.ActGrpP.Frame
+        end
+        return nil
+    end
+
+    local function ComputeWarnPosForPanel(targetPnl, wW, wH)
+        local _, targetScreenY = ComputeTargetPos()
+        local fw, fh = 760, 480
+        local fx = math.Round((ScrW() - fw) * 0.5)
+        local fy = math.Round((ScrH() - fh) * 0.5)
+        if IsValid(targetPnl) then
+            fw, fh = targetPnl:GetSize()
+            fx, fy = targetPnl:LocalToScreen(0, 0)
+        end
+        local boxW = wW or warnBoxW
+        local boxH = wH or warnBoxH
+        local warnX = math.Round(fx + (fw - boxW) * 0.5)
+        local warnY = fy - boxH - targetScreenY
+        if warnY < 4 then
+            warnY = 4
+        end
+        return warnX, warnY
+    end
+
+    if IsValid(self.MenuEror) then self.MenuEror:Remove() end
+    if IsValid(self.MenuWarn) then self.MenuWarn:Remove() end
+
+    -- 1. OBERER HINWEIS-CONTAINER ("Rechtsklick auf ein Emote...")
+    self.MenuEror = vgui.Create("DPanel")
+    self.MenuEror:SetSize(hintBoxW, hintBoxH)
+    local startX, startY = ComputeTargetPos(hintBoxW)
+    self.MenuEror:SetPos(startX, startY)
+
+    self.MenuEror.Think = function(s)
+        if not IsValid(self.Frame) then
+            s:Remove()
+            return
+        end
+        local isDE = IsGermanLanguage()
+        local curHintText = isDE and "Rechtsklick auf ein Emote, um das Emote Men\195\188 zu \195\182ffnen." or "Right-click an emote to open the Emote Menu."
+        surface.SetFont(font)
+        local curTw = surface.GetTextSize(curHintText)
+        local newW = curTw + math.Round(26 * scale)
+        if s:GetWide() ~= newW then
+            s:SetWide(newW)
+        end
+        local tx, ty = ComputeTargetPos(s:GetWide())
+        local cx, cy = s:GetPos()
+        if cx ~= tx or cy ~= ty then
+            s:SetPos(tx, ty)
         end
     end
 
-    if ply.DButtonRestart == nil and A_AM.ActMod.A_ActMod_RedyUse then
-        local DButtonD = vgui.Create("DButton", self.MenuEror)
-        DButtonD:SetPos(30, 375)
-        DButtonD:SetSize(190, 17)
-        DButtonD:SetText(aR:T("ListOfRTR_ReROR"))
-        DButtonD:SetTextColor(Color(255, 255, 150, 255))
-        DButtonD.DoClick = function(s)
-            if IsValid(self.MenuEror) then
-                if ply.DButtonRestart == nil then
-					RunConsoleCommand("r_flushlod")
-                    A_AM.ActMod:Tast_SvToCl_restuo(ply, true)
-                    ply.DButtonRestart = true
-                    timer.Simple(3.5, function() if IsValid(ply) then ply.DButtonRestart = nil end end)
-                    if IsValid(DButtonD) then DButtonD:Remove() end
-                    self.MenuEror:SizeTo(250, 382, 0.2, 0, -1)
-                    if IsValid(self.Frame) then self.Frame:Remove() end
-                    self:Close("nOw")
+    self.MenuEror.Paint = function(s, w, h)
+        local rad = math.min(math.Round(8 * scale), 8)
+
+        local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(185))
+            or (GetCleanHUDBaseColor and Color(GetCleanHUDBaseColor().r * 0.85, GetCleanHUDBaseColor().g * 0.85, GetCleanHUDBaseColor().b * 0.85, 185))
+            or Color(35, 45, 60, 185)
+        draw.RoundedBox(rad, 0, 0, w, h, bgCol)
+
+        local isDE = IsGermanLanguage()
+        local hintText = isDE and "Rechtsklick auf ein Emote, um das Emote Men\195\188 zu \195\182ffnen." or "Right-click an emote to open the Emote Menu."
+
+        local txtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(bgCol))
+            or (((bgCol.r + bgCol.g + bgCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+        local midY = math.floor(h * 0.5)
+        local midX = math.floor(w * 0.5)
+        if not (txtCol.r == 0 and txtCol.g == 0 and txtCol.b == 0) then
+            draw.SimpleText(hintText, font, midX + 1, midY + 1, Color(0, 0, 0, 220), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        draw.SimpleText(hintText, font, midX, midY, txtCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+
+    -- 2. HINWEIS-CONTAINER ("Das Emote Menue ist nur teilweise...")
+    -- Erscheint direkt OBERHALB des jeweils geoeffneten Fensters (Emote Menu, Shortcut Buttons, TeamDance List)
+    -- mit exakt demselben vertikalen Abstand (targetScreenY)
+    local function EnsureMenuWarnPanel()
+        if IsValid(self.MenuWarn) then return self.MenuWarn end
+
+        self.MenuWarn = vgui.Create("DPanel")
+        self.MenuWarn:SetSize(warnBoxW, warnBoxH)
+        self.MenuWarn:SetMouseInputEnabled(false)
+        self.MenuWarn:SetDrawOnTop(true)
+        self.MenuWarn:SetAlpha(0)
+
+        local startWX, startWY = ComputeWarnPosForPanel(GetActivePartialHUDWindow(), warnBoxW, warnBoxH)
+        self.MenuWarn:SetPos(startWX, startWY)
+
+        self.MenuWarn.Think = function(s)
+            local activeWin = GetActivePartialHUDWindow()
+            if not IsValid(self.Frame) and not IsValid(activeWin) then
+                s:Remove()
+                return
+            end
+            if not IsValid(activeWin) then
+                if s:GetAlpha() ~= 0 then
+                    s:SetAlpha(0)
                 end
+                return
             end
-        end
-        DButtonD.Paint = function(pan, ww, hh)
-            draw.RoundedBox(2, 0, 0, ww, hh, (pan:IsDown() and Color(150, 150, 50, 155)) or (pan:IsHovered() and Color(50, 50, 80, 100)) or Color(50, 50, 50, 255))
+            if s:GetAlpha() ~= 255 then
+                s:SetAlpha(255)
+                s:MoveToFront()
+            end
+            local isDE = IsGermanLanguage()
+            local curWarnText = isDE and "Das Emote Men\195\188 ist nur teilweise in das Hagebuddne HUD integriert!" or "The Emote Menu is only partially integrated into the Hagebuddne HUD!"
+            surface.SetFont(fontWarn)
+            local curWw = surface.GetTextSize(curWarnText)
+            local newWarnW = iconSize + 8 + curWw + math.Round(28 * scale)
+            if s:GetWide() ~= newWarnW then
+                s:SetWide(newWarnW)
+            end
+            local wx, wy = ComputeWarnPosForPanel(activeWin, s:GetWide(), s:GetTall())
+            local cx, cy = s:GetPos()
+            if cx ~= wx or cy ~= wy then
+                s:SetPos(wx, wy)
+            end
         end
 
-        if GNoBWBol_cl(ply) == false then
-            local DButtss = vgui.Create("DButton", self.MenuEror)
-            DButtss:SetPos(10, 396)
-            DButtss:SetSize(self.MenuEror:GetWide() - 20, 25)
-            DButtss:SetText(aR:T("LORTR_How"))
-            DButtss:SetTextColor(Color(255, 255, 250, 255))
-            DButtss:SetFont("ActMod_a1")
-            DButtss.DoClick = function(s)
-                if IsValid(self.MenuEror) then
-                    surface.PlaySound("garrysmod/content_downloaded.wav")
-                    self.MenuEror:Remove()
-                    self:HelpFixActMod()
-                end
+        self.MenuWarn.Paint = function(s, w, h)
+            local activeWin = GetActivePartialHUDWindow()
+            if not IsValid(activeWin) then return end
+
+            local rad = math.min(math.Round(8 * scale), 8)
+
+            local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(185))
+                or (GetCleanHUDBaseColor and Color(GetCleanHUDBaseColor().r * 0.85, GetCleanHUDBaseColor().g * 0.85, GetCleanHUDBaseColor().b * 0.85, 185))
+                or Color(35, 45, 60, 185)
+            draw.RoundedBox(rad, 0, 0, w, h, bgCol)
+
+            local isDE = IsGermanLanguage()
+            local warnText = isDE and "Das Emote Men\195\188 ist nur teilweise in das Hagebuddne HUD integriert!" or "The Emote Menu is only partially integrated into the Hagebuddne HUD!"
+
+            surface.SetFont(fontWarn)
+            local curWarnW = surface.GetTextSize(warnText)
+            local curTotalWarnW = iconSize + 6 + curWarnW
+            local midY = math.floor(h * 0.5)
+            local warnIcon = Material("icon16/exclamation.png", "noclamp smooth")
+            local startXPos = math.Round((w - curTotalWarnW) * 0.5)
+
+            surface.SetMaterial(warnIcon)
+            surface.SetDrawColor(255, 255, 255, 240)
+            surface.DrawTexturedRect(startXPos, midY - math.Round(iconSize * 0.5), iconSize, iconSize)
+
+            local baseTxtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(bgCol))
+                or (((bgCol.r + bgCol.g + bgCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+            local isBrightBg = (baseTxtCol.r == 0 and baseTxtCol.g == 0 and baseTxtCol.b == 0)
+            local warnCol = isBrightBg and baseTxtCol or Color(255, 205, 75, 240)
+            if not isBrightBg then
+                draw.SimpleText(warnText, fontWarn, startXPos + iconSize + 6 + 1, midY + 1, Color(0, 0, 0, 200), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
             end
-            DButtss.Paint = function(pan, ww, hh)
-                local AColor_1 = math.max(70, math.min(150, 255 + (255 * math.sin(CurTime() * 2))))
-                draw.RoundedBox(2, 0, 0, ww, hh, (pan:IsDown() and Color(150, 150, 50, 155)) or (pan:IsHovered() and Color(80, 120, 80, 100)) or Color(AColor_1 + 50, AColor_1, 50, 255))
-            end
+            draw.SimpleText(warnText, fontWarn, startXPos + iconSize + 6, midY, warnCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
+
+        return self.MenuWarn
     end
 
-    self.MenuEror.Typ = self.MenuEror.Typ or 0
-    local DButtonD = vgui.Create("DButton", self.MenuEror)
-    DButtonD:SetPos(10, 30)
-    DButtonD:SetSize(50, 20)
-    DButtonD:SetText(aR:T("LORTR_T_Image"))
-    DButtonD:SetTextColor(Color(150, 150, 160, 255))
-    DButtonD.DoClick = function(s)
-        if IsValid(self.MenuEror) then
-            surface.PlaySound("garrysmod/ui_return.wav")
-            if self.MenuEror.Typ ~= 0 then
-                self.MenuEror.Typ = 0
-                if IsValid(self.ListShowRPlys) then
-                    self.ListShowRPlys:Remove()
-                end
-            end
+    EnsureMenuWarnPanel()
+
+    hook.Add("Think", "ActMod_CleanHUD_EnsureWarnPanel", function()
+        if IsValid(GetActivePartialHUDWindow()) and not IsValid(self.MenuWarn) then
+            EnsureMenuWarnPanel()
         end
-    end
+    end)
 
-    DButtonD.Paint = function(pan, ww, hh)
-        draw.RoundedBox(10, 0, 0, ww, hh, self.MenuEror.Typ == 0 and Color(50, 50, 50, 255) or Color(20, 20, 30, 255))
-        if pan:IsDown() then
-            pan:SetTextColor(Color(220, 255, 255, 255))
-        elseif pan:IsHovered() then
-            pan:SetTextColor(Color(200, 200, 255, 255))
-        else
-            pan:SetTextColor(Color(150, 150, 160, 255))
-        end
-    end
-
-    local DButtonD = vgui.Create("DButton", self.MenuEror)
-    DButtonD:SetPos(65, 30)
-    DButtonD:SetSize(50, 20)
-    DButtonD:SetText(aR:T("LORTR_T_Text"))
-    DButtonD.DoClick = function(s)
-        if IsValid(self.MenuEror) then
-            surface.PlaySound("garrysmod/ui_return.wav")
-            if self.MenuEror.Typ ~= 1 then
-                self.MenuEror.Typ = 1
-                if IsValid(self.ListShowRPlys) then
-                    self.ListShowRPlys:Remove()
-                end
-            end
-        end
-    end
-    DButtonD.Paint = function(pan, ww, hh)
-        draw.RoundedBox(10, 0, 0, ww, hh, self.MenuEror.Typ == 1 and Color(50, 50, 50, 255) or Color(20, 20, 30, 255))
-        if pan:IsDown() then
-            pan:SetTextColor(Color(220, 255, 255, 255))
-        elseif pan:IsHovered() then
-            pan:SetTextColor(Color(200, 200, 255, 255))
-        else
-            pan:SetTextColor(Color(150, 150, 160, 255))
-        end
-    end
-
-    local DButtonD = vgui.Create("DButton", self.MenuEror)
-    DButtonD:SetPos(130, 30)
-    DButtonD:SetSize(100, 20)
-    DButtonD:SetText(aR:T("LORTR_T_SP"))
-    DButtonD.DoClick = function(s)
-        if IsValid(self.MenuEror) then
-            surface.PlaySound("garrysmod/ui_return.wav")
-            if IsValid(self.ListShowRPlys) then
-                self.ListShowRPlys:Remove()
-                for k, v in pairs(player.GetAll()) do
-                    if IsValid(v) then
-                        RGR_Table_Ply(v)
-                    end
-                end
-                self.ListShowRPlys = MakeScroll(self.MenuEror)
-            end
-            if self.MenuEror.Typ ~= 2 then
-                self.MenuEror.Typ = 2
-                if IsValid(self.ListShowRPlys) then
-                    self.ListShowRPlys:Remove()
-                end
-                self.ListShowRPlys = MakeScroll(self.MenuEror)
-            end
-        end
-    end
-    DButtonD.Paint = function(pan, ww, hh)
-        draw.RoundedBox(10, 0, 0, ww, hh, self.MenuEror.Typ == 2 and Color(50, 50, 50, 255) or Color(20, 20, 30, 255))
-        if pan:IsDown() then
-            pan:SetTextColor(Color(255, 255, 255, 255))
-        elseif pan:IsHovered() then
-            pan:SetTextColor(Color(200, 200, 100, 255))
-        else
-            pan:SetTextColor(Color(120, 120, 130, 255))
-        end
-    end
-
-    local function Dimage(pply, Gw, Gh, Gname, GNWBool)
-		local Tab_sv,Tab_cl = A_AM.ActMod.GetMSS_Tab,A_AM.ActMod.GetMSS_Tab_cl
-		
-        if GNWBool == "AM4_Dyn_xdR" or GNWBool == "AM4_Dyn_xdR__sv" then
-			local aa,az = 30 + 15 ,30
-			local ah = 45/2 - az/2
-			draw.RoundedBox(5, Gw, Gh, 218, 45, Color(15, 45, 65, 255))
-			surface.SetDrawColor(Color(255, 255, 255, 200))
-			surface.SetMaterial(Material("actmod/showeror/bam4.jpg"))
-			surface.DrawTexturedRect(Gw + 4, Gh + ah, az, az)
-			draw.RoundedBox(5, Gw + 4, Gh + ah + az + 1, az, 2, Tab_sv["GetMDLSeq_AM4"] == 2 and Color(100, 255, 100, 255) or Tab_sv["GetMDLSeq_AM4"] == 1 and Color(255, 255, 100, 255) or Color(200, 100, 50, 255))
-			draw.SimpleText("|", "ActMod_a6", Gw + az*1.5 -3, Gh + 9, Color(255, 255, 255, 255) ,1)
-			surface.SetDrawColor(Color(255, 255, 255, 200))
-			surface.SetMaterial(Material("actmod/showeror/bdyn.png", "noclamp smooth"))
-			surface.DrawTexturedRect(Gw + 4 + aa, Gh + ah, az, az)
-			draw.RoundedBox(5, Gw + 4 + aa, Gh + ah + az + 1, az, 2, Tab_sv["GetMDLSeq_Dyn"] == 2 and Color(100, 255, 100, 255) or Tab_sv["GetMDLSeq_Dyn"] == 1 and Color(255, 255, 100, 255) or Color(200, 100, 50, 255))
-			draw.SimpleText("|", "ActMod_a6", Gw + (az*1.5)*2 -3, Gh + 9, Color(255, 255, 255, 255),1)
-			surface.SetDrawColor(Color(255, 255, 255, 200))
-			surface.SetMaterial(Material("actmod/showeror/bxdr.png", "noclamp smooth"))
-			surface.DrawTexturedRect(Gw + 4 + aa*2, Gh + ah, az, az)
-			draw.RoundedBox(5, Gw + 4 + aa*2, Gh + ah + az + 1, az, 2, Tab_sv["GetMDLSeq_xdR"] == 2 and Color(100, 255, 100, 255) or Tab_sv["GetMDLSeq_xdR"] == 1 and Color(255, 255, 100, 255) or Color(200, 100, 50, 255))
-			draw.SimpleText(">", "ActMod_a6", Gw + (az*1.5)*3 + 15, Gh + 10, Color(200, 255, 255, 255),1)
-			surface.SetDrawColor(Color(255, 255, 255, 200))
-			if GNWBool == "AM4_Dyn_xdR__sv" then
-				if Tab_sv["GetMDLSeq_Dyn"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/ssdyn.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				elseif Tab_sv["GetMDLSeq_AM4"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/ssam4.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				elseif Tab_sv["GetMDLSeq_xdR"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/ssxdr.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				elseif Tab_sv["GetMDLSeq_wOS"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/sswos.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				else
-					surface.SetMaterial(Material("actmod/showeror/no.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				end
-			else
-				if Tab_cl["GetMDLSeq_Dyn"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/ssdyn.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				elseif Tab_cl["GetMDLSeq_AM4"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/ssam4.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				elseif Tab_cl["GetMDLSeq_xdR"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/ssxdr.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				elseif Tab_cl["GetMDLSeq_wOS"] == 2 then
-					surface.SetMaterial(Material("actmod/showeror/sswos.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				else
-					surface.SetMaterial(Material("actmod/showeror/no.png", "noclamp smooth"))
-					surface.DrawTexturedRect(Gw + 4 + aa*3 + 35, Gh + 5, 36, 36)
-				end
-			end
-			return
-		end
-		
-		local anok = 0
-		
-        draw.RoundedBox(5, Gw, Gh, 104, 45, Color(15, 45, 65, 255))
-        draw.SimpleText(">", "ActMod_a6", Gw + 46, Gh + 10, Color(200, 255, 255, 255))
-        surface.SetDrawColor(Color(255, 255, 255, 200))
-		if Gname == "bam4" then
-			surface.SetMaterial(Material("actmod/showeror/bam4.jpg"))
-		elseif Gname == "eam4" then
-			surface.SetMaterial(Material("actmod/showeror/fulf.png"))
-		else
-			surface.SetMaterial(Material("actmod/showeror/" .. Gname .. ".png", "noclamp smooth"))
-		end
-        surface.DrawTexturedRect(Gw + 2.5, Gh + 2.5, 40, 40)
-		
-		if GNWBool == "GetMDLSeq_AM4_sv" then
-			anok = Tab_sv["GetMDLSeq_AM4"]
-		elseif GNWBool == "GetMDLSeq_Dyn_sv" then
-			anok = Tab_sv["GetMDLSeq_Dyn"]
-		elseif GNWBool == "GetMDLSeq_xdR_sv" then
-			anok = Tab_sv["GetMDLSeq_xdR"]
-		elseif GNWBool == "GetMDLSeq_wOS_sv" then
-			anok = Tab_sv["GetMDLSeq_wOS"]
-		elseif GNWBool == "GetPackAnimV_sv" then
-			anok = Tab_sv["GetPackAnimV"] == 0 and 0 or Tab_sv["GetPackAnimV"] == 1 and 1 or Tab_sv["GetORG"] == 0 and 3 or 2 
-		elseif GNWBool == "GetMDLSeq_AM4" then
-			anok = Tab_cl["GetMDLSeq_AM4"]
-		elseif GNWBool == "GetMDLSeq_Dyn" then
-			anok = Tab_cl["GetMDLSeq_Dyn"]
-		elseif GNWBool == "GetMDLSeq_xdR" then
-			anok = Tab_cl["GetMDLSeq_xdR"]
-		elseif GNWBool == "GetMDLSeq_wOS" then
-			anok = Tab_cl["GetMDLSeq_wOS"]
-		elseif GNWBool == "GetPackAnimV" then
-			anok = Tab_cl["GetPackAnimV"] == 0 and 0 or Tab_cl["GetPackAnimV"] == 1 and 1 or Tab_cl["GetORG"] == 0 and 3 or 2 
-		end
-		
-		if anok == 2 then
-			surface.SetMaterial(Material("actmod/showeror/ye.png", "noclamp smooth"))
-		elseif anok == 3 then
-			surface.SetMaterial(Material("actmod/showeror/yen.png", "noclamp smooth"))
-		elseif anok == 1 then
-			surface.SetMaterial(Material("actmod/showeror/ir.png", "noclamp smooth"))
-		else
-			surface.SetMaterial(Material("actmod/showeror/no.png", "noclamp smooth"))
-		end
-
-        surface.DrawTexturedRect(Gw + 62, Gh + 2.5, 40, 40)
-    end
-
-    local function DText(pply, Gw, Gh, Gname, GNWBool)
-		local Tab_sv,Tab_cl = A_AM.ActMod.GetMSS_Tab,A_AM.ActMod.GetMSS_Tab_cl
-        draw.SimpleText(Gname, "ActMod_a5", Gw, Gh, Color(200, 255, 255, 255))
-
-		local anok,txt,Clo = 0,"__",Color(150, 255, 150, 255)
-		
-		if GNWBool == "GetMDLSeq_AM4_sv" then
-			anok = Tab_sv["GetMDLSeq_AM4"]
-		elseif GNWBool == "GetMDLSeq_Dyn_sv" then
-			anok = Tab_sv["GetMDLSeq_Dyn"]
-		elseif GNWBool == "GetMDLSeq_xdR_sv" then
-			anok = Tab_sv["GetMDLSeq_xdR"]
-		elseif GNWBool == "GetMDLSeq_wOS_sv" then
-			anok = Tab_sv["GetMDLSeq_wOS"]
-		elseif GNWBool == "GetPackAnimV_sv" then
-			anok = Tab_sv["GetPackAnimV"] == 0 and 0 or Tab_sv["GetPackAnimV"] == 1 and 1 or Tab_sv["GetORG"] == 0 and 3 or 2 
-		elseif GNWBool == "GetMDLSeq_AM4" then
-			anok = Tab_cl["GetMDLSeq_AM4"]
-		elseif GNWBool == "GetMDLSeq_Dyn" then
-			anok = Tab_cl["GetMDLSeq_Dyn"]
-		elseif GNWBool == "GetMDLSeq_xdR" then
-			anok = Tab_cl["GetMDLSeq_xdR"]
-		elseif GNWBool == "GetMDLSeq_wOS" then
-			anok = Tab_cl["GetMDLSeq_wOS"]
-		elseif GNWBool == "GetPackAnimV" then
-			anok = Tab_cl["GetPackAnimV"] == 0 and 0 or Tab_cl["GetPackAnimV"] == 1 and 1 or Tab_cl["GetORG"] == 0 and 3 or 2 
-		end
-		
-		if GNWBool == "AM4_Dyn_xdR__sv" then
-			txt = Tab_sv["GetSetBase"]
-			if txt == "wOS" then
-				Clo = Color(255, 150, 100, 255)
-			end
-		elseif GNWBool == "AM4_Dyn_xdR" then
-			txt = Tab_cl["GetSetBase"]
-			if txt == "wOS" then
-				Clo = Color(255, 150, 100, 255)
-			end
-		elseif anok == 3 then
-			txt = self.MenuEror.sR_yes
-			Clo = Color(240, 240, 150, 255)
-		elseif anok == 2 then
-			txt = self.MenuEror.sR_yes
-		elseif anok == 1 then
-			txt = self.MenuEror.sR_unK
-			Clo = Color(180, 150, 100, 255)
-		else
-			txt = self.MenuEror.sR_no
-			Clo = Color(255, 150, 100, 255)
-		end
-		
-		draw.SimpleText(txt, "ActMod_a5", self.MenuEror:GetWide() - 20, Gh, Clo ,2)
-    end
-
-    local function DSText(pply, Gw, Gh, Gname, GNWBool)
-        draw.SimpleText(Gname, "ActMod_a5", Gw, Gh, Color(200, 255, 255, 255))
-        if pply:GetNWBool(GNWBool, false) == true then
-            draw.SimpleText("True", "ActMod_a5", self.MenuEror:GetWide() - 45, Gh, Color(120, 255, 150, 255))
-        else
-            draw.SimpleText("False", "ActMod_a5", self.MenuEror:GetWide() - 45, Gh, Color(255, 120, 100, 255))
-        end
-    end
-
-    self.MenuEror.sR_TRq = aR:T("LORTRTheReq")
-    self.MenuEror.sR_Sv = aR:T("LORTRServer")
-    self.MenuEror.sR_Cl = aR:T("LORTRClient")
-    self.MenuEror.sR_yes = aR:T("LORTR_Yes")
-    self.MenuEror.sR_no = aR:T("LORTR_No")
-    self.MenuEror.sR_unK = aR:T("LORTR_unK")
-    self.MenuEror.sR_Rrun = aR:T("ListOfRToRun")
-    self.MenuEror.sR_FullF = aR:T("Fullyfunctional")
-
-    self.MenuEror.Paint = function(pan, ww, hh)
-        if GNoBWBol_cl(ply) == false and self.MenuEror.DButn.a == false and self.MenuEror.DButn.Trgit == false and A_AM.ActMod.A_ActMod_RedyUse then
-            local AColor_1 = math.max(70, math.min(150, 255 + (255 * math.sin(CurTime() * 2))))
-            draw.RoundedBox(5, 0, 0, ww, hh, Color(AColor_1 + 50, AColor_1, 10, 255))
-        else
-            draw.RoundedBox(5, 0, 0, ww, hh, Color(15, 45, 65, 255))
-        end
-
-        draw.SimpleText(self.MenuEror.sR_Rrun, "ActMod_a5", 7, 3, Color(255, 255, 255, 255))
-        draw.RoundedBox(8, 0, 40, ww, 336, Color(50, 50, 50, 255))
-        if self.MenuEror.Typ == 2 or self.MenuEror.DButn.a == false then return end
-        local Geth = 40
-
-        if game.SinglePlayer() then
-            draw.RoundedBox(8, 4, Geth + 20, ww - 8, 180, Color(68, 80, 90, 255))
-            draw.SimpleText(self.MenuEror.sR_TRq, "CloseCaption_Normal", 125, Geth + 40, Color(200, 255, 255, 255), 1, 1)
-			draw.SimpleTextOutlined(":  AhmedMake400  :", "ActMod_a6", ww/2, Geth + 230, Color(150, 255, 255, 255), 1, 1, 1, Color(255, 255, 255, math.max(10, math.min(255, 255 * math.sin(CurTime() * 1)-100))))
-            if self.MenuEror.Typ == 0 then
-                Dimage(ply, 16, Geth + 70, "hy", "AM4_Dyn_xdR")
-                Dimage(ply, 16, Geth + 130, "bam4", "GetMDLSeq_AM4")
-                Dimage(ply, 130, Geth + 130, "eam4", "GetPackAnimV")
-            elseif self.MenuEror.Typ == 1 then
-                DText(ply, 6, Geth + 70, "Base ( AM4 | Dyn | xdR ) :", "AM4_Dyn_xdR__sv")
-                DText(ply, 6, Geth + 100, "Base Anim-AM4 :", "GetMDLSeq_AM4_sv")
-                DText(ply, 6, Geth + 130, self.MenuEror.sR_FullF .." :", "GetPackAnimV_sv")
-            end
-            draw.SimpleTextOutlined("ActMod", "GModToolName", 125, Geth + 290, Color(150, 255, 255, 255), 1, 1, 2, Color(255, 255, 255, math.max(10, math.min(255, 255 * math.sin(CurTime() * 1)))))
-       else
-            draw.RoundedBox(8, 4, Geth + 20, ww - 8, 120, Color(68, 80, 90, 255))
-            draw.SimpleText(self.MenuEror.sR_Sv, "ActMod_a5", 6, Geth + 20, Color(150, 255, 255, 255))
-            if self.MenuEror.Typ == 0 then
-                Dimage(ply, 16, Geth + 42, "hy", "AM4_Dyn_xdR__sv")
-                Dimage(ply, 16, Geth + 91, "bam4", "GetMDLSeq_AM4_sv")
-                Dimage(ply, 130, Geth + 91, "eam4", "GetPackAnimV_sv")
-            elseif self.MenuEror.Typ == 1 then
-                DText(ply, 10, Geth + 50, "Base ( AM4 | Dyn | xdR ) :", "AM4_Dyn_xdR__sv")
-                DText(ply, 10, Geth + 80, "Base Anim-AM4 :", "GetMDLSeq_AM4_sv")
-                DText(ply, 10, Geth + 110, self.MenuEror.sR_FullF .." :", "GetPackAnimV_sv")
-            end
-            draw.RoundedBox(8, 4, Geth + 160, ww - 8, 120, Color(68, 80, 90, 255))
-            draw.SimpleText(self.MenuEror.sR_Cl, "ActMod_a5", 6, Geth + 160, Color(255, 255, 155, 255))
-			draw.SimpleTextOutlined(":  AhmedMake400  :", "ActMod_a6", ww/2, Geth + 310, Color(150, 255, 255, 255), 1, 1, 1, Color(255, 255, 255, math.max(10, math.min(255, 255 * math.sin(CurTime() * 1)-100))))
-            if self.MenuEror.Typ == 0 then
-                Dimage(ply, 16, Geth + 181, "hy", "AM4_Dyn_xdR")
-                Dimage(ply, 16, Geth + 231, "bam4", "GetMDLSeq_AM4")
-                Dimage(ply, 130, Geth + 231, "eam4", "GetPackAnimV")
-            elseif self.MenuEror.Typ == 1 then
-                DText(ply, 10, Geth + 190, "Base ( AM4 | Dyn | xdR ) :", "AM4_Dyn_xdR")
-                DText(ply, 10, Geth + 220, "Base Anim-AM4 :", "GetMDLSeq_AM4")
-                DText(ply, 10, Geth + 250, self.MenuEror.sR_FullF .." :", "GetPackAnimV")
-            end
-        end
-    end
-
-    if A_AM.ActMod.A_ActMod_RedyUse and Mar_TabDat(TLang, GetConVarString("actmod_cl_lang")) == true and GetConVarNumber("actmod_cl_showbhelp") == 1 then
-        local function hText(Nam, TText, Po1, Po2, clo) draw.SimpleText(Nam, TText, Po1, Po2, clo, 1, 0) end
-        local ListHelp,wa = vgui.Create("DPanel", self.Frame) ,250
-        ListHelp:SetSize(wa, 21)
-        if ActMod_Iok1 ~= true then
-            ListHelp:SetPos(-40, 30)
-            ListHelp:MoveTo(2, 30, 0.3)
-
-            timer.Simple(0.4, function()
-                if IsValid(ListHelp) then
-                    ListHelp:SizeTo(wa, 85, 0.2, 0, -1)
-                    timer.Simple(1.1, function()
-                        if IsValid(ListHelp) then
-                            ListHelp:SizeTo(wa, 119, 0.5, 0, -1)
-							timer.Simple(0.3, function()
-								if IsValid(ListHelp) then
-									ActMod_Iok1 = true
-								end
-							end)
-                        end
-                    end)
-                end
-            end)
-        else
-            ListHelp:SizeTo(wa, 119, 0.2, 0, -1)
-            ListHelp:SetPos(2, 30)
-        end
-        ListHelp:SetAlpha(0)
-        ListHelp:AlphaTo(255, 0.3)
-        ListHelp:MakePopup()
-        ListHelp:SetText("")
-        ListHelp.Paint = function(ste, w, h)
-            draw.RoundedBox(10, 0, 0, w, h, Color(30 + (10 * math.sin(CurTime() * 2)), 40 + (10 * math.sin(CurTime() * 2)), 10, 255))
-            draw.RoundedBox(10, 0, 0, w, 21, Color(60, 60, 80, 255))
-            hText(aR:T("AHlp_Txt_0"), "ActMod_a5", w / 2, 2, Color(255, 255, 155, 255))
-            if GetConVarNumber("actmod_cl_showbhelp") == 1 then
-                hText(aR:T("AHlp_Txt_1"), "ActMod_a6", w / 2, 25, Color(155, 255, 255, 255))
-                hText(aR:T("AHlp_Txt_2"), "ActMod_a2", w / 2, 54, Color(255, 255, 150, 255))
-            else
-                hText(aR:T("AHlp_Txt_3"), "ActMod_a5", w / 2, 20, Color(155, 255, 255, 255))
-                hText(aR:T("AHlp_Txt_4"), "ActMod_a3", w / 2, 40, Color(155, 255, 255, 255))
-            end
-        end
-
-        local function BaSText(ListHelp, Po1, Po2, Sz1, Sz2, Gname, GNWBool)
-            local DButton = vgui.Create("DButton", ListHelp)
-            DButton:SetPos(Po1, Po2)
-            DButton:SetSize(Sz1, Sz2)
-            DButton:SetText("")
-            DButton.DoClick = function(s)
-                if IsValid(ListHelp) and GetConVarNumber("actmod_cl_showbhelp") == 1 then
-                    if GNWBool then
-                        self:HelpActMod()
-                        ListHelp:AlphaTo(0, 0.1,0.1,function(s) if IsValid(ListHelp) then ListHelp:Remove() end end)
-                        ListHelp:SizeTo(wa, 0, 0.1, 0, -1)
-						self:Close()
-						if LocalPlayer().ActMod_MousePos then
-							LocalPlayer().ActMod_MousePos = nil
-						end
-                    else
-                        ListHelp:SizeTo(wa, 0, 2.4, 1, -1)
-                        RunConsoleCommand("actmod_cl_showbhelp", "0")
-						ListHelp:AlphaTo(0,0.6,2.1,function(s) if IsValid(ListHelp) then ListHelp:Remove() end end )
-						if IsValid(ListHelp.bt1) then ListHelp.bt1:Remove() end
-						if IsValid(ListHelp.bt2) then ListHelp.bt2:Remove() end
-                    end
-                end
-            end
-
-            DButton.Paint = function(ste, w, h)
-                if ste:IsDown() then
-                    draw.RoundedBox(5, 0, 0, w, h, GNWBool and Color(30, 150, 80, 255) or Color(150, 130, 80, 255))
-                    draw.SimpleText(Gname, "ActMod_a5", w / 2, h / 2, Color(255, 255, 155, 255), 1, 1)
-                    surface.SetDrawColor(Color(100, 255, 255, math.max(155 + (100 * math.sin(CurTime() * 15)), 0)))
-                    surface.DrawOutlinedRect(0, 0, w, h, 1)
-                elseif ste:IsHovered() then
-                    draw.RoundedBox(5, 0, 0, w, h, GNWBool and Color(20, 100, 70, 255) or Color(100, 80, 40, 255))
-                    draw.SimpleText(Gname, "ActMod_a5", w / 2, h / 2, Color(255, 255, 155, 255), 1, 1)
-                else
-                    draw.RoundedBox(5, 0, 0, w, h, GNWBool and Color(15, 80, 40, math.max(200 + (155 * math.sin(CurTime() * 7)), 0)) or Color(70, 50, 30, 255))
-                    draw.SimpleText(Gname, "ActMod_a5", w / 2, h / 2, Color(220, 255, 255, 255), 1, 1)
-                end
-            end
-			return DButton
-        end
-
-        ListHelp.bt1 = BaSText(ListHelp, ListHelp:GetWide() - 110, 90, 100, 25, aR:T("LORTR_Yes"), true)
-        ListHelp.bt2 = BaSText(ListHelp, 10, 90, 102, 25, aR:T("LORTR_No"))
-    end
 end
-
 A_AM.ActMod.LuaVgi_MListErr_Done = true

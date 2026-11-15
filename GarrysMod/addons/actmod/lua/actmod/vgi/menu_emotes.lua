@@ -1,3 +1,38 @@
+if CLIENT then
+    local function EnsureActModFonts()
+        local sc = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        surface.CreateFont("ActMod_HUD_LoadingTitle", {
+            font = "Tahoma",
+            size = math.max(math.Round(15 * sc), 14),
+            weight = 700,
+            extended = true,
+            antialias = true
+        })
+        surface.CreateFont("ActMod_HUD_LoadingSub", {
+            font = "Tahoma",
+            size = math.max(math.Round(13 * sc), 12),
+            weight = 700,
+            extended = true,
+            antialias = true
+        })
+        surface.CreateFont("ActMod_HUD_LoadingBar", {
+            font = "Tahoma",
+            size = math.max(math.Round(13 * sc), 12),
+            weight = 700,
+            extended = true,
+            antialias = true
+        })
+        surface.CreateFont("ActMod_HUD_FloorMsg", {
+            font = "Tahoma",
+            size = math.max(math.Round(24 * sc), 22),
+            weight = 700,
+            extended = true,
+            antialias = true
+        })
+    end
+    EnsureActModFonts()
+    hook.Add("InitPostEntity", "ActMod_HUD_Fonts_Init", EnsureActModFonts)
+end
 if not A_AM or not A_AM.ActMod or not A_AM.ActMod.SetChfg then return end
 A_AM.ActMod.LuaVgi_MEmote = true
 
@@ -130,6 +165,7 @@ function A_AM.ActMod:LShowSOpKes(aelf,DBu)
 		aa_self.DoClick = function () if IsValid(DBu.pgh) then DBu.pgh:Remove() end end
 		DBu.pgh = vgui.Create("DFrame", aelf.Frame)
 		local pgh = DBu.pgh
+		A_AM.ActMod.ShortcutWindow = pgh
 		pgh:MakePopup()
 		pgh:SetSize(638, 450)
 		pgh:SetPos(ScrW()/2 - pgh:GetWide()/2, ScrH()/2 - pgh:GetTall()/2)
@@ -139,7 +175,10 @@ function A_AM.ActMod:LShowSOpKes(aelf,DBu)
 		pgh:ShowCloseButton(false)
 		pgh.tt = true
 		pgh.tt2 = true
-		pgh.OnRemove = function() if IsValid(aa_self) then aa_self:Remove() end end
+		pgh.OnRemove = function()
+			if A_AM.ActMod.ShortcutWindow == pgh then A_AM.ActMod.ShortcutWindow = nil end
+			if IsValid(aa_self) then aa_self:Remove() end
+		end
 		pgh.Paint = function(ste, w, h)
 			draw.RoundedBox(10, 0, 0, w, h, Color(90, 100, 200, 255))
 			draw.RoundedBox(10, 5, 30, w - 10, h*0.4, Color(50, 50, 100, 255))
@@ -269,8 +308,8 @@ Actoji.OpenEmote = function(self,vrShow)
 
     if w > h then w = h else h = w end
 	
-	local ActMod_a4_SC = A_AM.ActMod:CGFont("ActMod_a4_SC", {font = "Roboto Regular",size = w*0.016})
-	local ActMod_a8_SC = A_AM.ActMod:CGFont("ActMod_a8_SC", {font = "Roboto Regular",size = w*0.04})
+	local ActMod_a4_SC = A_AM.ActMod:CGFont("ActMod_a4_SC", {font = "Tahoma", size = math.Round(w * 0.016), weight = 700, antialias = true, extended = true})
+	local ActMod_a8_SC = A_AM.ActMod:CGFont("ActMod_a8_SC", {font = "Tahoma", size = math.Round(w * 0.04), weight = 700, antialias = true, extended = true})
 
     if not vrShow and ply.ActMod_MousePos then gui.SetMousePos(ply.ActMod_MousePos[1], ply.ActMod_MousePos[2]) end
 	if GetConVarNumber("actmod_cl_pageslot") < 1 or GetConVarNumber("actmod_cl_pageslot") > 8 then ply:ConCommand("actmod_cl_pageslot 1\n") end
@@ -332,6 +371,7 @@ Actoji.OpenEmote = function(self,vrShow)
         if IsValid(self.PanelLoadigAnimSy) then self.PanelLoadigAnimSy:Remove() end
         if IsValid(self.Loding) then self.Loding:Remove() end
 		if IsValid(self.LitHelp) then self.LitHelp:Remove()end
+        if IsValid(self.MenuEror) then self.MenuEror:Remove() end
         if IsValid(EndFrameA) then EndFrameA:Remove() end
         if IsValid(self.LitLang) then self.LitLang:Remove() end
         if self.Frame.dragState then if IsValid(self.Frame.dragState.ghostPanel) then self.Frame.dragState.ghostPanel:Remove() end self.Frame.dragState.pendingCrossPage = nil end
@@ -349,53 +389,84 @@ Actoji.OpenEmote = function(self,vrShow)
 	A_AM.ActMod.Truevr = vrShow or false
 	self.Frame.TabEmots = {}
 
+    local teamInd = hudelements and (hudelements.GetStored("clean_skin_teamindicator") or hudelements.GetStored("pure_skin_teamindicator"))
+    local rInfo = hudelements and (hudelements.GetStored("clean_skin_roundinfo") or hudelements.GetStored("pure_skin_roundinfo"))
+    local topMargin = (teamInd and teamInd.GetPos and teamInd:GetPos().y)
+        or (rInfo and rInfo.GetPos and rInfo:GetPos().y)
+        or (appearance and appearance.GetGlobalScale and math.Round(10 * appearance.GetGlobalScale()))
+        or 10
+
     if (A_AM.ActMod.A_ActMod_RedyUse and GetConVarNumber("actmod_cl_eloading") ~= 0) or GetConVarNumber("actmod_cl_eloading") == 0 then
         if GetConVarNumber("actmod_cl_sortemote") > 2 then
             self.Frame:SetSize(ScrW(), ScrW()*0.125) self.Frame:SetPos(ScrW()/2-self.Frame:GetWide()/2 ,ScrH()-self.Frame:GetTall()-5)
         elseif GetConVarNumber("actmod_cl_sortemote") == 2 then
-            self.Frame:SetSize(math.Clamp(h*1.06, 751/3,751), math.Clamp(h*0.6865, 470/1.4,470)) self.Frame:Center()
+            self.Frame:SetSize(math.Clamp(h*1.06, 751/3,751), math.Clamp(h*0.6865, 470/1.4,470)) self.Frame:SetPos(ScrW() / 2 - self.Frame:GetWide() / 2, topMargin)
         else
-            self.Frame:SetSize(w, h) self.Frame:Center()
+            self.Frame:SetSize(w, h) self.Frame:SetPos(ScrW() / 2 - self.Frame:GetWide() / 2, topMargin)
         end
     else
         self.Frame:SetSize(0, 0)
         self.Frame.SSz = true
-		if GetConVarNumber("actmod_cl_eloading") ~= 0 then
-			self.Loding = vgui.Create("DPanel")
-			self.Loding:SetPos(ScrW() / 2 - 380 / 2, ScrH() / 2 - 100)
-			self.Loding:SetSize(380, 80)
-			self.Loding:SetText("")
-			self.Loding.Paint = function(ste, aw, ah)
-				local WiDl
-				local PSho = A_AM.ActMod.A_ActMod_RedyUse_Num or 0
-		
-				draw.RoundedBox(15, 0, 0, aw, ah, Color(50, 70, 90, 150))
-				draw.SimpleText(aR:T("wndSetup_Checks"), "ActMod_a6", 2, 25, Color(180, 255, 200, 255), nil, TEXT_ALIGN_CENTER)
-				draw.SimpleText(PSho .. "%", "ActMod_a6", aw - 57, 25, Color(180, 255, 200, 255), nil, TEXT_ALIGN_CENTER)
-				draw.RoundedBox(10, 10, 40, aw - 20, 30, Color(20, 20, 20, 150))
-				draw.RoundedBox(10, 10, 40, math.Remap( PSho, 0, 100, 0, aw - 20 ), 30, Color(20, 150, 100, 150))
-				if PSho >= 100 then
-					WiDl = aR:T("wndSetupL_HBComp")
-				elseif PSho >= 95 then
-					WiDl = aR:T("wndSetupL_Effects")
-				elseif PSho >= 91 then
-					WiDl = aR:T("wndSetupL_Background")
-				elseif PSho >= 66 then
-					WiDl = aR:T("wndSetupL_Emotes")
-				elseif PSho >= 35 then
-					WiDl = aR:T("wndSetupL_Sounds")
-				elseif PSho >= 30 then
-					WiDl = aR:T("wndSetupL_AaCing") .. "..."
-				elseif PSho >= 16 then
-					WiDl = aR:T("wndSetupL_AaCing") .. ".."
-				elseif PSho >= 4 then
-					WiDl = aR:T("wndSetupL_AaCing") .. "."
-				else
-					WiDl = aR:T("wndSetupL_Please")
-				end
-				draw.SimpleText(WiDl, "ActMod_a5", aw / 2, 55, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-				WiDl = nil
-			end
+        if GetConVarNumber("actmod_cl_eloading") ~= 0 then
+            self.Loding = vgui.Create("DPanel")
+            local ZW, ZH = 380, 80
+            self.Loding:SetSize(ZW, ZH)
+            self.Loding:SetPos(ScrW() / 2 - ZW / 2, ScrH() / 2 - ZH / 2)
+            self.Loding:SetText("")
+            self.Loding.Paint = function(ste, aw, ah)
+                local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+                local rad = math.min(math.Round(8 * scale), 8)
+                local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(230)) or Color(28, 38, 52, 230)
+                local borderCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(75, 115, 160, 255)
+
+                draw.RoundedBox(rad, 0, 0, aw, ah, bgCol)
+                surface.SetDrawColor(borderCol.r, borderCol.g, borderCol.b, 200)
+                surface.DrawOutlinedRect(0, 0, aw, ah, 1)
+
+                local PSho = A_AM.ActMod.A_ActMod_RedyUse_Num or 0
+                local fontTitle = "ActMod_HUD_LoadingTitle"
+                local fontSub = "ActMod_HUD_LoadingSub"
+                local txtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(bgCol))
+                    or (((bgCol.r + bgCol.g + bgCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+                local isDarkText = (txtCol.r == 0 and txtCol.g == 0 and txtCol.b == 0)
+                if not isDarkText then
+                    draw.SimpleText("ActMod  " .. (aR and aR:T("wndSetup") or "Setup") .. " V" .. (A_AM.ActMod.Mounted["Version ActMod"] or "1.0"), fontTitle, aw / 2 + 1, 16 + 1, Color(0, 0, 0, 180), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                    draw.SimpleText(math.Round(PSho) .. "%", fontSub, aw - 14 + 1, 16 + 1, Color(0, 0, 0, 180), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+                end
+                draw.SimpleText("ActMod  " .. (aR and aR:T("wndSetup") or "Setup") .. " V" .. (A_AM.ActMod.Mounted["Version ActMod"] or "1.0"), fontTitle, aw / 2, 16, txtCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                draw.SimpleText(math.Round(PSho) .. "%", fontSub, aw - 14, 16, txtCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+
+                local trackCol = (GetCleanHUDKeyBoxColor and GetCleanHUDKeyBoxColor(200)) or Color(20, 30, 42, 200)
+                local fillCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(55, 110, 160, 255)
+                local barX, barY, barW, barH = 12, 34, aw - 24, 26
+                draw.RoundedBox(6, barX, barY, barW, barH, trackCol)
+                local fillW = math.Clamp(math.Remap(PSho, 0, 100, 0, barW), 0, barW)
+                if fillW > 0 then
+                    draw.RoundedBox(6, barX, barY, fillW, barH, fillCol)
+                end
+
+                local WiDl = ""
+                if aR and aR.T then
+                    if PSho >= 100 then WiDl = aR:T("wndSetupL_HBComp")
+                    elseif PSho >= 95 then WiDl = aR:T("wndSetupL_Effects")
+                    elseif PSho >= 91 then WiDl = aR:T("wndSetupL_Background")
+                    elseif PSho >= 66 then WiDl = aR:T("wndSetupL_Emotes")
+                    elseif PSho >= 35 then WiDl = aR:T("wndSetupL_Sounds")
+                    elseif PSho >= 30 then WiDl = aR:T("wndSetupL_AaCing") .. "..."
+                    elseif PSho >= 16 then WiDl = aR:T("wndSetupL_AaCing") .. ".."
+                    elseif PSho >= 4 then WiDl = aR:T("wndSetupL_AaCing") .. "."
+                    else WiDl = aR:T("wndSetup_Checks")
+                    end
+                else
+                    WiDl = "Loading... " .. math.Round(PSho) .. "%"
+                end
+                local barTxtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(fillCol))
+                    or (((fillCol.r + fillCol.g + fillCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+                if not (barTxtCol.r == 0 and barTxtCol.g == 0 and barTxtCol.b == 0) then
+                    draw.SimpleText(WiDl, "ActMod_HUD_LoadingBar", aw / 2 + 1, barY + barH / 2 + 1, Color(0, 0, 0, 180), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                end
+                draw.SimpleText(WiDl, "ActMod_HUD_LoadingBar", aw / 2, barY + barH / 2, barTxtCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            end
         end
     end
 
@@ -406,7 +477,7 @@ Actoji.OpenEmote = function(self,vrShow)
 		if GetReadyFUse(ply) == true then
 			self.Frame:AlphaTo(255, 0.1)
 		else
-			self.Frame:AlphaTo(85, 0.1)
+			self.Frame:AlphaTo(255, 0.1)
 		end
     end
 
@@ -420,14 +491,17 @@ Actoji.OpenEmote = function(self,vrShow)
 		self.Frame.Paint = function(s, w, h)
 			local p_w,p_h,z_w,z_h = 20,h/2-10,w-40,20
 			local nu = math.Remap((A_AM.ActMod.A_ActMod_RedyUse_Num or 0),0,100,0,1)
-			draw.RoundedBox(0, p_w+2,p_h+2, z_w-4, z_h-4, Color(50, 70, 100, 255))
-			draw.RoundedBox(0, p_w+2,p_h+2, (z_w-4)*nu, z_h-4, Color(50, 255, 255, 255))
-			surface.SetDrawColor(Color(255,255,255,255))
-			surface.DrawOutlinedRect(p_w,p_h,z_w,z_h, 2)
-			draw.RoundedBox(0, p_w,p_h-22,70,23, Color(50, 50, 100, 100))
-			draw.SimpleText("ActMod", "ActMod_a3", p_w+4,(p_h-11), Color(255, 255, 255, 255),0,1)
-			surface.SetDrawColor(Color(255,255,255,255))
-			surface.DrawOutlinedRect(p_w,p_h-22,70,23, 2)
+			local trackCol = (GetCleanHUDKeyBoxColor and GetCleanHUDKeyBoxColor(200)) or Color(20, 30, 42, 200)
+			local fillCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(55, 110, 160, 255)
+			draw.RoundedBox(6, p_w, p_h, z_w, z_h, trackCol)
+			draw.RoundedBox(6, p_w, p_h, z_w * nu, z_h, fillCol)
+            local PSho = A_AM.ActMod.A_ActMod_RedyUse_Num or 0
+            local barTxtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(fillCol))
+                or (((fillCol.r + fillCol.g + fillCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+            if not (barTxtCol.r == 0 and barTxtCol.g == 0 and barTxtCol.b == 0) then
+                draw.SimpleText("Loading... " .. math.Round(PSho) .. "%", "ActMod_HUD_LoadingBar", p_w + z_w * 0.5 + 1, p_h + z_h * 0.5 + 1, Color(0, 0, 0, 180), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            end
+            draw.SimpleText("Loading... " .. math.Round(PSho) .. "%", "ActMod_HUD_LoadingBar", p_w + z_w * 0.5, p_h + z_h * 0.5, barTxtCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 		end
 		return
 	end
@@ -436,10 +510,119 @@ Actoji.OpenEmote = function(self,vrShow)
         return x + (radius * math.sin(angle)) - (w or 0), y + (radius * -math.cos(angle)) - (h or 0)
     end
 
-    local function DrawLine(w, h, a, rMul)
-        local r = (h / 2) * (rMul or 1)
-        local x, y = getIntercept(w / 2, h / 2, r, a)
-        surface.DrawLine(w / 2, h / 2, x, y)
+    local function DrawCapsulePoly(cx, cy, ex, ey, a, hw)
+        local poly = {}
+        local seg = 8
+        local pi = math.pi
+        for i = 0, seg do
+            local ang = a + (pi * 0.5) + (i / seg) * pi
+            poly[#poly + 1] = {
+                x = cx + math.sin(ang) * hw,
+                y = cy - math.cos(ang) * hw
+            }
+        end
+        for i = 0, seg do
+            local ang = a - (pi * 0.5) + (i / seg) * pi
+            poly[#poly + 1] = {
+                x = ex + math.sin(ang) * hw,
+                y = ey - math.cos(ang) * hw
+            }
+        end
+        surface.DrawPoly(poly)
+    end
+
+    local aaLayers = {
+        { hw = 2.35, aMul = 0.22 },
+        { hw = 1.90, aMul = 0.45 },
+        { hw = 1.45, aMul = 0.75 },
+        { hw = 1.05, aMul = 1.00 }
+    }
+
+    local function GetEmoteWheelBoxAndBorderColors()
+        local baseCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(49, 71, 94)
+        local ovCol = (GetCleanHUDTintedColor and GetCleanHUDTintedColor(90, 0.35)) or Color(0, 0, 0, 90)
+        local ovAlpha = (ovCol.a or 90) / 255
+        -- Bisherige Farbe der Box im Emote-Wheel (jetzt für Umrandung & Trennlinien)
+        local wheelAccentCol = Color(
+            math.Clamp(math.Round(baseCol.r * (1 - ovAlpha) + (ovCol.r or 0) * ovAlpha), 0, 255),
+            math.Clamp(math.Round(baseCol.g * (1 - ovAlpha) + (ovCol.g or 0) * ovAlpha), 0, 255),
+            math.Clamp(math.Round(baseCol.b * (1 - ovAlpha) + (ovCol.b or 0) * ovAlpha), 0, 255),
+            255
+        )
+        -- Hintergrundfarbe exakt wie die Item-Containerbox im Reiter "Fun & Games" (innerCol)
+        local innerBoxCol = Color(
+            math.Clamp(math.Round(wheelAccentCol.r * 0.55), 10, 255),
+            math.Clamp(math.Round(wheelAccentCol.g * 0.55), 12, 255),
+            math.Clamp(math.Round(wheelAccentCol.b * 0.55), 16, 255),
+            255
+        )
+        return innerBoxCol, wheelAccentCol
+    end
+
+    local function BuildRoundedRectPoints(x, y, w, h, r, seg)
+        local pts = {}
+        r = math.Clamp(r, 0, math.min(w, h) * 0.5)
+        seg = seg or 6
+        local corners = {
+            { cx = x + w - r, cy = y + r, startAng = 270 },
+            { cx = x + w - r, cy = y + h - r, startAng = 0 },
+            { cx = x + r, cy = y + h - r, startAng = 90 },
+            { cx = x + r, cy = y + r, startAng = 180 }
+        }
+        for c = 1, 4 do
+            local corner = corners[c]
+            for i = 0, seg do
+                local rad = math.rad(corner.startAng + (i / seg) * 90)
+                pts[#pts + 1] = {
+                    x = corner.cx + math.cos(rad) * r,
+                    y = corner.cy + math.sin(rad) * r
+                }
+            end
+        end
+        return pts
+    end
+
+    local function DrawRoundedBoxOutline(x, y, w, h, r, col, thickness)
+        thickness = thickness or 4
+        local outerPts = BuildRoundedRectPoints(x, y, w, h, r, 6)
+        local innerR = math.max(r - thickness, 1)
+        local innerPts = BuildRoundedRectPoints(x + thickness, y + thickness, w - thickness * 2, h - thickness * 2, innerR, 6)
+        local count = #outerPts
+        draw.NoTexture()
+        surface.SetDrawColor(col.r, col.g, col.b, col.a or 255)
+        for i = 1, count do
+            local nxt = (i % count) + 1
+            surface.DrawPoly({
+                outerPts[i],
+                outerPts[nxt],
+                innerPts[nxt],
+                innerPts[i]
+            })
+        end
+    end
+
+    local function DrawCleanLine(cx, cy, a, r, col)
+        if r <= 1 then return end
+        local ex = cx + r * math.sin(a)
+        local ey = cy - r * math.cos(a)
+        local baseA = col.a or 255
+
+        local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        local borderThick = math.max(math.Round(4 * scale), 4)
+        local coreHW = borderThick * 0.5
+        local lineLayers = {
+            { hw = coreHW + 0.85, aMul = 0.22 },
+            { hw = coreHW + 0.45, aMul = 0.50 },
+            { hw = coreHW + 0.15, aMul = 0.80 },
+            { hw = math.max(coreHW - 0.10, 1.5), aMul = 1.00 }
+        }
+
+        draw.NoTexture()
+        for i = 1, #lineLayers do
+            local layer = lineLayers[i]
+            surface.SetDrawColor(col.r, col.g, col.b, math.Clamp(math.Round(baseA * layer.aMul), 1, 255))
+            DrawCapsulePoly(cx, cy, ex, ey, a, layer.hw)
+        end
     end
 
     local function DrOuR2(x, z, w, h, Co, sA)
@@ -498,34 +681,13 @@ Actoji.OpenEmote = function(self,vrShow)
 			local openFrac = math.Clamp((CurTime() - (s._openTime or 0)) / 0.3, 0, 1)
 			local rMul = openFrac * openFrac * (3 - 2 * openFrac)
             if GetConVarNumber("actmod_cl_menuformat") == 1 then
-                surface.SetDrawColor(50, 50, 255, 150)
-                DrawLine(w, h, pi / 8, rMul)
-                DrawLine(w, h, pi / 2 - pi / 8, rMul)
-                DrawLine(w, h, pi / 2 + pi / 8, rMul)
-                DrawLine(w, h, pi - pi / 8, rMul)
-                DrawLine(w, h, pi + pi / 8, rMul)
-                DrawLine(w, h, pi * 1.5 - pi / 8, rMul)
-                DrawLine(w, h, pi * 1.5 + pi / 8, rMul)
-                DrawLine(w, h, pi * 2 - pi / 8, rMul)
-                surface.SetDrawColor(50, 255, 50, 150)
-                DrawLine(w, h, pi / pr, rMul)
-                DrawLine(w, h, pi / 2 - pi / pr, rMul)
-                DrawLine(w, h, pi / 2 + pi / pr, rMul)
-                DrawLine(w, h, pi - pi / pr, rMul)
-                DrawLine(w, h, pi + pi / pr, rMul)
-                DrawLine(w, h, pi * 1.5 - pi / pr, rMul)
-                DrawLine(w, h, pi * 1.5 + pi / pr, rMul)
-                DrawLine(w, h, pi * 2 - pi / pr, rMul)
-                surface.SetDrawColor(255, 50, 50, 150)
-                local pr = 7.93
-                DrawLine(w, h, pi / pr, rMul)
-                DrawLine(w, h, pi / 2 - pi / pr, rMul)
-                DrawLine(w, h, pi / 2 + pi / pr, rMul)
-                DrawLine(w, h, pi - pi / pr, rMul)
-                DrawLine(w, h, pi + pi / pr, rMul)
-                DrawLine(w, h, pi * 1.5 - pi / pr, rMul)
-                DrawLine(w, h, pi * 1.5 + pi / pr, rMul)
-                DrawLine(w, h, pi * 2 - pi / pr, rMul)
+                local _, hudLineCol = GetEmoteWheelBoxAndBorderColors()
+                local cx, cy = w / 2, h / 2
+                local r = (h * 0.42) * (rMul or 1)
+                for i = 0, 7 do
+                    local a = (pi / 8) + i * (pi / 4)
+                    DrawCleanLine(cx, cy, a, r, hudLineCol)
+                end
             elseif GetConVarNumber("actmod_cl_menuformat") == 2 then
                 local radius = math.min(w, h) * rMul
 				DrawColorCircles(
@@ -539,9 +701,13 @@ Actoji.OpenEmote = function(self,vrShow)
             end
         end
 
+    end
+
+    self.Frame.PaintOver = function(s, w, h)
+        local ply = LocalPlayer()
+        if not IsValid(ply) then return end
         if GetReadyFUse(ply) ~= true then
             local WiDl
-
             if GetConVarNumber("actmod_sv_a_vehicles") == 0 and ply:InVehicle() then
                 WiDl = aR:T("iCantUse_inVehicle")
             elseif GetConVarNumber("actmod_sv_a_ground") == 1 and not ply:OnGround() then
@@ -554,23 +720,40 @@ Actoji.OpenEmote = function(self,vrShow)
                 WiDl = aR:T("iCantUse_helpless")
             elseif (wOS and wOS.RollMod and ply:wOSIsRolling()) or ply:GetNWBool("wOS.LS.IsRolling", false) then
                 WiDl = aR:T("iCantUse_rolling")
-            elseif GetConVarNumber("actmod_sv_a_move") ~= 0 and ply:KeyDown(IN_FORWARD) or ply:KeyDown(IN_BACK) or ply:KeyDown(IN_MOVELEFT) or ply:KeyDown(IN_MOVERIGHT) then
+            elseif GetConVarNumber("actmod_sv_a_move") ~= 0 and (ply:KeyDown(IN_FORWARD) or ply:KeyDown(IN_BACK) or ply:KeyDown(IN_MOVELEFT) or ply:KeyDown(IN_MOVERIGHT)) then
                 WiDl = aR:T("iCantUse_moving")
             end
-
             if WiDl then
-				local zw, zh = 450, 70
-				local zw2, zh2 = math.max(zw - 10 + (8 * math.sin(CurTime() * 6)), 0), math.max(zh - 10 + (5 * math.sin(CurTime() * 6)), 0)
-				draw.RoundedBox(10, w / 2 - (zw + 15) / 2, h / 2 - (zh + 15) / 2, zw + 15, zh + 15, Color(0, 0, 0, 255))
-				draw.RoundedBox(10, w / 2 - (zw + 10) / 2, h / 2 - (zh + 10) / 2, zw + 10, zh + 10, Color(0, 0, 0, 255))
-				draw.RoundedBox(10, w / 2 - zw / 2, h / 2 - zh / 2, zw, zh, Color(0, 0, 0, 255))
-				draw.RoundedBox(10, w / 2 - zw2 / 2, h / 2 - zh2 / 2, zw2, zh2, Color(200, 100, 0, 255))
-                draw.SimpleText(WiDl, "ActMod_a1", w / 2, h / 2, Color(255, 255, 255, 255), 1, 1)
-                draw.SimpleText(WiDl, "ActMod_a1", w / 2 + 1, h / 2 + 1, Color(255, 255, 255, 255), 1, 1)
+                if not string.EndsWith(WiDl, ".") and not string.EndsWith(WiDl, "!") then
+                    WiDl = WiDl .. "."
+                end
+                local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+                local font = (GetCleanScaledFont and GetCleanScaledFont("ActMod_HUD_FloorMsg_Large", 24, scale, 700)) or "ActMod_HUD_FloorMsg"
+                surface.SetFont(font)
+                local tw, th = surface.GetTextSize(WiDl)
+                local zw = math.max(math.Round(520 * scale), tw + math.Round(60 * scale))
+                local zh = math.max(math.Round(68 * scale), (th or 24) + math.Round(28 * scale))
+                local innerBoxCol, borderCol = GetEmoteWheelBoxAndBorderColors()
+                local rad = math.min(math.Round(8 * scale), 8)
+                local borderThick = math.max(math.Round(4 * scale), 4)
+                local bx, by = math.Round(w / 2 - zw / 2), math.Round(h / 2 - zh / 2)
+
+                draw.RoundedBox(rad, bx, by, zw, zh, borderCol)
+                draw.RoundedBox(math.max(rad - borderThick, 2), bx + borderThick, by + borderThick, zw - borderThick * 2, zh - borderThick * 2, innerBoxCol)
+                DrawRoundedBoxOutline(bx, by, zw, zh, rad, borderCol, borderThick)
+
+                local txtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(innerBoxCol))
+                    or (((innerBoxCol.r + innerBoxCol.g + innerBoxCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+                borderCol = Color(borderCol.r, borderCol.g, borderCol.b, 255)
+                innerBoxCol = Color(innerBoxCol.r, innerBoxCol.g, innerBoxCol.b, 255)
+                txtCol = Color(txtCol.r, txtCol.g, txtCol.b, 255)
+                if not (txtCol.r == 0 and txtCol.g == 0 and txtCol.b == 0) then
+                    draw.SimpleText(WiDl, font, math.Round(w / 2) + 1, math.Round(h / 2) + 1, Color(0, 0, 0, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                end
+                draw.SimpleText(WiDl, font, math.Round(w / 2), math.Round(h / 2), txtCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
         end
     end
-
     self.Frame.tr = false
 
 	local ATDataNew = A_AM.ActMod:LoadEmts("savefvit",{"Actojifavo"},function(t,g) A_AM.ActMod:RCFi(t,g) end)
@@ -593,7 +776,7 @@ Actoji.OpenEmote = function(self,vrShow)
             else
                 if self.Frame.tr == true then
                     self.Frame.tr = false
-                    self.Frame:AlphaTo(85, 0.1)
+                    self.Frame:AlphaTo(255, 0.1)
                     return
                 end
             end
@@ -1047,6 +1230,10 @@ Actoji.OpenEmote = function(self,vrShow)
 		e.txtwa = A_AM.ActMod.aGetTextSize(e.MatE and shv or e.Alptxt,ActMod_a4_SC)
         e.Paint = function(s, w, h)
             if not s.Material then return end
+            -- Weisser Hover-Rand vollstaendig entfernt
+            -- surface.SetDrawColor(255, 255, 255, 180)
+            -- surface.DrawOutlinedRect(0, 0, w, h - 8)
+            -- end
             if e.MatE then
 				local aa = s:IsHovered() and 255 or 100
 				surface.SetDrawColor(255, 255, 255, aa)
@@ -1054,12 +1241,27 @@ Actoji.OpenEmote = function(self,vrShow)
 				surface.DrawTexturedRect(3,3,w-6,h-6)
 				draw.SimpleText("None", ActMod_a8_SC, w/2, h/2, Color(255, 255, 255, aa), 1, 1)
 				if s:IsHovered() then
-					local wa = math.min( s.txtwa + 14 ,w)
-					draw.RoundedBox(0, w/2-wa/2, h-12,wa,12, Color(0,0,50))
+					local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+					local rad = math.min(math.Round(4 * scale), 4)
+					local boxH = math.max(math.Round(16 * scale), 14)
+					local boxY = h - boxH - 2
+					local wa = math.min(s.txtwa + 16, w)
+					local boxX = math.Round(w / 2 - wa / 2)
+					local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(230)) or Color(28, 38, 52, 230)
+					local borderCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(75, 115, 160, 255)
+
+					draw.RoundedBox(rad, boxX, boxY, wa, boxH, bgCol)
+					DrawRoundedBoxOutline(boxX, boxY, wa, boxH, rad, Color(borderCol.r, borderCol.g, borderCol.b, 200), 1)
+
+					local txtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(bgCol))
+						or (((bgCol.r + bgCol.g + bgCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
 					if s.txtwa > w then
-						draw.ScrollingText(shv, ActMod_a4_SC, 0, h-7, Color(255,255,255), 0,1 ,w,s,2,s.Actoji)
+						draw.ScrollingText(shv, ActMod_a4_SC, 0, boxY + boxH * 0.5, txtCol, 0, 1, w, s, 2, s.Actoji)
 					else
-						draw.SimpleText(shv, ActMod_a4_SC, w/2, h-7, Color(255,255,255),1,1)
+						if not (txtCol.r == 0 and txtCol.g == 0 and txtCol.b == 0) then
+							draw.SimpleText(shv, ActMod_a4_SC, math.Round(w / 2) + 1, math.Round(boxY + boxH * 0.5) + 1, Color(0, 0, 0, 200), 1, 1)
+						end
+						draw.SimpleText(shv, ActMod_a4_SC, math.Round(w / 2), math.Round(boxY + boxH * 0.5), txtCol, 1, 1)
 					end
 				end
 				return
@@ -1150,14 +1352,30 @@ Actoji.OpenEmote = function(self,vrShow)
 				surface.SetMaterial(matbckd)
 				surface.DrawTexturedRect(w/2-aw/2,h/2-aw/2,aw,aw)
 			end
-			local alpb = math.max(math.min((ca*1.5)-80,255),0)
+			local alpb = math.max(math.min((ca * 1.5) - 80, 255), 0)
 			if alpb > 0 then
-				local wa = math.min( s.txtwa + 14 ,w)
-				draw.RoundedBox(0, w/2-wa/2, h-12,wa,12, Color(0,0,50,alpb))
+				local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+				local rad = math.min(math.Round(4 * scale), 4)
+				local boxH = math.max(math.Round(16 * scale), 14)
+				local boxY = h - boxH - 2
+				local wa = math.min(s.txtwa + 16, w)
+				local boxX = math.Round(w / 2 - wa / 2)
+				local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(math.min(alpb, 230))) or Color(28, 38, 52, math.min(alpb, 230))
+				local borderCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(75, 115, 160, alpb)
+
+				draw.RoundedBox(rad, boxX, boxY, wa, boxH, bgCol)
+				DrawRoundedBoxOutline(boxX, boxY, wa, boxH, rad, Color(borderCol.r, borderCol.g, borderCol.b, math.min(alpb, 200)), 1)
+
+				local baseTxtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(bgCol))
+					or (((bgCol.r + bgCol.g + bgCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+				local txtCol = Color(baseTxtCol.r, baseTxtCol.g, baseTxtCol.b, alpb)
 				if s.txtwa > w then
-					draw.ScrollingText(s.Alptxt, ActMod_a4_SC, 0, h-7, Color(255,255,255,alpb), 0,1 ,w,s,2,s.Actoji)
+					draw.ScrollingText(s.Alptxt, ActMod_a4_SC, 0, boxY + boxH * 0.5, txtCol, 0, 1, w, s, 2, s.Actoji)
 				else
-					draw.SimpleText(s.Alptxt, ActMod_a4_SC, w/2, h-7, Color(255,255,255,alpb),1,1)
+					if not (baseTxtCol.r == 0 and baseTxtCol.g == 0 and baseTxtCol.b == 0) then
+						draw.SimpleText(s.Alptxt, ActMod_a4_SC, math.Round(w / 2) + 1, math.Round(boxY + boxH * 0.5) + 1, Color(0, 0, 0, alpb * 0.8), 1, 1)
+					end
+					draw.SimpleText(s.Alptxt, ActMod_a4_SC, math.Round(w / 2), math.Round(boxY + boxH * 0.5), txtCol, 1, 1)
 				end
 			end
 
@@ -1331,7 +1549,20 @@ Actoji.OpenEmote = function(self,vrShow)
     ess:SetText("")
     ess.Paint = function(ste, w, h)
 		if ste:IsHovered() then self.Frame.TiHOVR = CurTime() + 0.1 end
-        draw.RoundedBox(6, 0, 0, w, h, Color(50, 50, 120, 100))
+        local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        local rad = math.min(math.Round(8 * scale), 8)
+        local borderThick = math.max(math.Round(4 * scale), 4)
+        local innerBoxCol, borderCol = GetEmoteWheelBoxAndBorderColors()
+        draw.RoundedBox(rad, 0, 0, w, h, borderCol)
+        draw.RoundedBox(math.max(rad - borderThick, 2), borderThick, borderThick, w - borderThick * 2, h - borderThick * 2, innerBoxCol)
+        DrawRoundedBoxOutline(0, 0, w, h, rad, borderCol, borderThick)
+    end
+    ess.PaintOver = function(ste, w, h)
+        local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        local rad = math.min(math.Round(8 * scale), 8)
+        local borderThick = math.max(math.Round(4 * scale), 4)
+        local _, borderCol = GetEmoteWheelBoxAndBorderColors()
+        DrawRoundedBoxOutline(0, 0, w, h, rad, borderCol, borderThick)
     end
     ess.OnRemove = function(ste, w, h) if IsValid(self.ess2) then self.ess2:Remove() end end
 
@@ -1347,51 +1578,60 @@ Actoji.OpenEmote = function(self,vrShow)
 		elseif GetConVarNumber("actmod_cl_sortemote") == 2 then
 			ess2:SetPos(ScrW() / 2 - ess2:GetWide() / 2, ScrH()/2 - self.Frame:GetTall()/1.65)
 		else
-			ess2:SetPos(ScrW() / 2 + 80, 5)
+			local sc = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+			local roundInfoW = math.Round(110 * sc)
+			local roundInfoH = math.Round(72 * sc)
+			local roundInfoX = math.Round(ScrW() * 0.5 - roundInfoW * 0.5)
+			local roundInfoY = topMargin
+			local rInfo = hudelements and (hudelements.GetStored("clean_skin_roundinfo") or hudelements.GetStored("pure_skin_roundinfo"))
+			if rInfo and rInfo.GetPos and rInfo:GetPos().x > 0 then
+				roundInfoX = rInfo:GetPos().x
+				roundInfoY = rInfo:GetPos().y
+				roundInfoW = rInfo:GetSize().w
+				roundInfoH = rInfo:GetSize().h
+			end
+
+			local msb = hudelements and (hudelements.GetStored("clean_skin_miniscoreboard") or hudelements.GetStored("pure_skin_miniscoreboard"))
+			local msbRight = roundInfoX + roundInfoW + roundInfoH
+			if msb and msb.GetPos and msb:GetPos().x > 0 then
+				msbRight = msb:GetPos().x + msb:GetSize().w
+			end
+			local folderBarX = msbRight + topMargin
+			local folderBarY = topMargin
+			ess2:SetPos(folderBarX, folderBarY)
 		end
+		_G.ActMod_FolderBarX = folderBarX
+		_G.ActMod_FolderBarY = folderBarY
+		_G.ActMod_FolderBarW = ess2:GetWide()
+		_G.ActMod_FolderBarH = ess2:GetTall()
 		ess2.Paint = function(ste, w, h)
-			draw.RoundedBox(6, 0, 0, w, h, Color(50, 50, 120, 140))
+			local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(185)) or (GetCleanHUDBaseColor and Color(GetCleanHUDBaseColor().r * 0.85, GetCleanHUDBaseColor().g * 0.85, GetCleanHUDBaseColor().b * 0.85, 185)) or Color(35, 45, 60, 185)
+			local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+			local rad = math.min(math.Round(8 * scale), 8)
+			draw.RoundedBox(rad, 0, 0, w, h, bgCol)
 		end
-    end
+	end
+	local function DBtt(ess, Gw, Gh, GCN, GSN)
+		local DBu = vgui.Create("DButton", ess)
+		DBu:SetPos(Gw, Gh)
+		DBu:SetSize(ess.zt*0.38, ess.zt*0.38)
+		DBu:SetText("")
+		DBu.Cmo = GCN
+		DBu.Paint = function(ste, w, h)
+            local isCurrent = (GCN == "actmod_cl_pageslot" and GetConVarNumber(GCN) == GSN)
+            local isHover = ste:IsHovered()
+            local hudBaseCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(100, 155, 255, 220)
+            local innerBg = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(220)) or Color(24, 34, 48, 220)
 
-    local function DBtt(ess, Gw, Gh, GCN, GSN)
-        local DBu = vgui.Create("DButton", ess)
-        DBu:SetPos(Gw, Gh)
-        DBu:SetSize(ess.zt*0.38, ess.zt*0.38)
-        DBu:SetText("")
-        DBu.Cmo = GCN
-
-        DBu.Paint = function(ste, w, h)
-            if GSN == "actmod_sv_enabled_addso" or GSN == "actmod_sv_enabled_addef" then
-                if ste:IsHovered() then
-                    surface.SetDrawColor(Color(80, 255, 255, 255))
-                    surface.DrawOutlinedRect(0, 0, w, h, 2)
-                end
-            elseif GCN == "A_BETT_2" then
-				if A_AM.ActMod.ActGrpP then
-					if ste:IsHovered() then
-						surface.SetDrawColor(Color(80, 255, 255, 255))
-						surface.DrawOutlinedRect(0, 0, w, h, 2)
-					end
-				elseif A_AM.ActMod.autDon and A_AM.ActMod.autDon == 1 then
-					if ste:IsHovered() then
-						surface.SetDrawColor(Color(200,220,200,255))
-						surface.DrawOutlinedRect(0, 0, w, h, 2)
-					else
-						surface.SetDrawColor(Color(math.max(200 + (255 * math.sin(CurTime() * 6)) * 1.5, 100), math.max(210 + (255 * math.sin(CurTime() * 6)) * 1.5, 110), 200, 255))
-						surface.DrawOutlinedRect(0, 0, w, h, 2)
-					end
-				elseif not A_AM.ActMod.ActGrpP then
-					if ste:IsHovered() then
-						surface.SetDrawColor(Color(180, 170, 150, 255))
-						surface.DrawOutlinedRect(0, 0, w, h, 2)
-					end
-				end
-            else
-                if ste:IsHovered() then
-                    surface.SetDrawColor(Color(80, 255, 255, 255))
-                    surface.DrawOutlinedRect(0, 0, w, h, 2)
-                end
+            if isCurrent then
+                -- Ausgewaehlter Ordner: weisser Rahmen mit demselben Rundungsgrad (rad = 4) wie beim Hover
+                draw.RoundedBox(4, 0, 0, w, h, Color(255, 255, 255, 235))
+                draw.RoundedBox(3, 1, 1, w - 2, h - 2, innerBg)
+            elseif isHover then
+                -- Hover-Zustand eines anderen Ordners: abgerundeter Rahmen (rad = 4) in hellerem Akzentfarbton
+                local accentCol = Color(math.min(hudBaseCol.r + 55, 255), math.min(hudBaseCol.g + 55, 255), math.min(hudBaseCol.b + 55, 255), 240)
+                draw.RoundedBox(4, 0, 0, w, h, accentCol)
+                draw.RoundedBox(3, 1, 1, w - 2, h - 2, innerBg)
             end
 
             surface.SetDrawColor(color_white)
@@ -1444,7 +1684,7 @@ Actoji.OpenEmote = function(self,vrShow)
 				CTxtMos(ste, nil, {100, 100, 100, 150}, GSN, "CreditsText")
 				if GetConVarNumber(GCN) == GSN then
 					surface.SetMaterial(Material("vgui/spawnmenu/hover", "noclamp smooth"))
-					surface.DrawTexturedRect(1, 1, w - 2, h - 2)
+					-- clean hud styling
 					surface.SetMaterial(Material("icon16/folder_go.png", "noclamp smooth"))
 				else
                     surface.SetDrawColor(Color(150, 150, 170, 255))

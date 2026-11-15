@@ -178,7 +178,7 @@ Actoji.Replace = function(self, Slot, isS ,callback ,ava)
 		if IsValid(self.Underlay.modelmenu) then self.Underlay.modelmenu:Remove() end
         if IsValid(self.Underlay) then self.Underlay:SetVisible(false) end
     end
-    self.Underlay.Paint = function(s, w, h) draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 150)) end
+    self.Underlay.Paint = function(s, w, h) draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 180)) end
     self.Underlay:MakePopup()
 	local aaw = 0
 	if file.Exists(atgufn, "DATA") then
@@ -196,30 +196,29 @@ Actoji.Replace = function(self, Slot, isS ,callback ,ava)
 	self.Underlay.aaw = aaw
 
 	
-	local Panel2
-	if self.Underlay.Dled then
-        if IsValid(Panel2) then Panel2:Remove() Panel2 = nil end
-		Panel2 = nil
-	else
-		Panel2 = vgui.Create("DPanel", self.Underlay)
-		Panel2:SetSize(240, 35)
-		Panel2:SetPos(5, 5)
-
-		Panel2.Paint = function(s, w, h)
-			draw.RoundedBox(10, 0, 0, w, h, (ThemeN == 1 and Color(50, 100, 150, 255)) or (ThemeN == 2 and Color(0, 0, 0, 150)) or Color(100, 100, 100, 150))
-		end
-    end
+	local Panel2 = nil
 
     local Thh = 30
     local alfh = 1000
     self.Underlay.Panel = vgui.Create("DPanel", self.Underlay)
     local Panel = self.Underlay.Panel
-    Panel:SetSize(760, math.Clamp(ScrH() / 1.3 ,355,680) + Thh)
-    Panel:Center()
-
+    local panelW = 760
+    local panelH = math.Clamp(ScrH() / 1.3, 355, 680) + Thh
+    Panel:SetSize(panelW, panelH)
+    Panel:SetPos(math.floor((ScrW() - panelW) * 0.5), math.floor((ScrH() - panelH) * 0.5))
     Panel.Paint = function(s, w, h)
-        draw.RoundedBox(10, 0, 0, w, h, (ThemeN == 1 and Color(50, 100, 150, 255)) or (ThemeN == 2 and Color(0, 0, 0, 150)) or Color(100, 100, 100, 150))
+        local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(240)) or (ThemeN == 1 and Color(50, 100, 150, 255)) or (ThemeN == 2 and Color(0, 0, 0, 220)) or Color(30, 40, 52, 240)
+        local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        local rad = math.min(math.Round(8 * scale), 8)
+        draw.RoundedBox(rad, 0, 0, w, h, bgCol)
     end
+    -- padding line
+    -- padding line
+    -- padding line
+    -- padding line
+    -- padding line
+    -- padding line
+    -- padding line
 
     local List
     local Buttons = {}
@@ -500,8 +499,9 @@ Actoji.Replace = function(self, Slot, isS ,callback ,ava)
 			Wnds_ComboBox3(465, 28, 125, 25, 30, -0.1, 90, 25, aR:T("LReplace_txt_MFormat"), "actmod_cl_menuformat2", aR:T("LReplace_MF0"), aR:T("LReplace_MF01"), aR:T("LReplace_MF02"), aR:T("LReplace_MF03"), "icon16/collision_off.png", "icon16/bullet_blue.png", "icon16/bullet_red.png", "icon16/bullet_purple.png", "CommTh")
 		end
 		if not self.Underlay.TDComboBox then self.Underlay.TDComboBox = {} end
-		self.Underlay.TDComboBox["CThemev2"] = vgui.Create("DComboBox", Panel2)
-		local DBuCh = self.Underlay.TDComboBox["CThemev2"]
+		if IsValid(Panel2) then
+			self.Underlay.TDComboBox["CThemev2"] = vgui.Create("DComboBox", Panel2)
+			local DBuCh = self.Underlay.TDComboBox["CThemev2"]
 		DBuCh:SetPos(5, 5)
 		DBuCh:SetSize(120, 25)
 		DBuCh:Clear()
@@ -524,7 +524,7 @@ Actoji.Replace = function(self, Slot, isS ,callback ,ava)
                     end)
                 end
 			end
-		end
+		end end
 	end
 
     local Scroll = vgui.Create("AM4_DScrollPanel", Panel)
@@ -1454,7 +1454,8 @@ Actoji.Replace = function(self, Slot, isS ,callback ,ava)
 		Wnds_ComboBox3(465, -2, 124, 25, 30, -0.1, 90, 25, aR:T("LReplace_BxSEm"), "actmod_cl_sortemote", nil, aR:T("LReplace_MF1"), aR:T("LReplace_MF2_2"), aR:T("LReplace_MF3"), nil, "actmod/imenu/imll1_1.png", "icon16/application_view_tile.png", "icon16/textfield.png", "SEmote")
 		Wnds_ComboBox3(594, 3, 158, 30, 30, -0.1, 126, 15, aR:T("LReplace_BxSCView"), "actmod_cl_setcamera", aR:T("LReplace_BxSCView0"), aR:T("LReplace_BxSCView1"), aR:T("LReplace_BxSCView2"), aR:T("LReplace_BxSCView3"), "icon16/page_white_text.png", "icon16/arrow_in.png", "icon16/anchor.png", "icon16/eye.png", "SCamV")
 
-		local rha = vgui.Create("DPanel", Panel2)
+		if IsValid(Panel2) then
+			local rha = vgui.Create("DPanel", Panel2)
 		rha:SetPos(131, 2)
 		rha:SetSize(99, 31)
 		rha:SetText("")
@@ -1528,7 +1529,7 @@ Actoji.Replace = function(self, Slot, isS ,callback ,ava)
 				elseif NTnum == 0 then
 					if IsValid(rha.nw) then rha.nw:Remove() end
 				end
-			end
+			end end
 		end
 		
 	end

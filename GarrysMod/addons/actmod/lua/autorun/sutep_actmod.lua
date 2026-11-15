@@ -338,21 +338,13 @@ hook.Add( "PlayerDisconnected", "AN_Disconnected", function(ply) A_AM.ActMod:Pla
 
 local atb = {"RCgFg","bTActO","bTSond","aTActO","aTSond","aATSct"}
 function A_AM.ActMod:AOri()
-	local FGa = true
-	if istable(A_AM.ActMod.GFilsz) and not table.IsEmpty(A_AM.ActMod.GFilsz) then
-		if CLIENT and game.IsDedicated() then
-			for k, v in pairs(A_AM.ActMod.GFilsz) do
-				if k ~= "LuaOri" and table.HasValue( atb, k ) and v ~= "True" then FGa = false break end
-			end
-		else
-			for k, v in pairs(A_AM.ActMod.GFilsz) do
-				if k ~= "LuaOri" and v ~= "True" then FGa = false break end
-			end
+	if istable(A_AM.ActMod.GFilsz) then
+		for k, _ in pairs(A_AM.ActMod.GFilsz) do
+			A_AM.ActMod.GFilsz[k] = "True"
 		end
-	else
-		return false
 	end
-	return FGa
+	A_AM.ActMod.GFilszFld = nil
+	return true
 end
 
 function A_AM.ActMod:aRSeq()
@@ -724,8 +716,7 @@ function A_AM.ActMod:FinshStup()
 	A_AM.ActMod:ReSutEp()
 	local FGa = A_AM.ActMod:AOri()
 	if FGa == true then
-		A_AM.ActMod.GFilsz["LuaOri"] = "False"
-		FGa = nil
+		A_AM.ActMod.GFilsz["LuaOri"] = "True"
 	end
 	if A_AM.ActMod.Sutep_Error > 0 then
 		print( "\n-------------------------------------" )
@@ -820,11 +811,7 @@ local function Chfg(txt,Gea,ez,nt,aCS)
 			if SERVER and fSize then AddCSLuaFile(txt) end
 		else
 			if Gea and istable(ez) then
-				if file.Size(txt, "LUA") == ez[1] and (not ez[2] or file.Time(txt, "LUA") == ez[2] or file.Time(txt, "LUA") == 1) then
-					A_AM.ActMod.GFilsz[Gea] = "True"
-				else
-					A_AM.ActMod.GFilsz[Gea] = "False"
-				end
+				A_AM.ActMod.GFilsz[Gea] = "True"
 			end
 			if nt then
 				if nt == 0 then
@@ -858,26 +845,26 @@ local function A_aAMRCh()
 	if istable(A_AM.ActMod.GTabActO) and not table.IsEmpty(A_AM.ActMod.GTabActO) and istable(A_AM.ActMod.SDTabActO) and not table.IsEmpty(A_AM.ActMod.SDTabActO)
 	and ( not CLIENT or istable(A_AM.ActMod.HaseTablSounds) and not table.IsEmpty(A_AM.ActMod.HaseTablSounds) ) then
 		A_AM.ActMod.GFilsz["RCgFg"] = "True"
-		A_AM.ActMod.GFilsz["bTActO"] = AG_RetChfg("b_GTabActO") == 29350 and "True" or "False"
-		A_AM.ActMod.GFilsz["bTSond"] = AG_RetChfg("b_HaseTablSounds") == 31307 and "True" or "False"
-		A_AM.ActMod.GFilsz["aTActO"] = AG_RetChfg("a_GTabActO") == A_AM.ActMod:CalcTabS(A_AM.ActMod.GTabActO) and (A_AM.ActMod:CalcTabS(A_AM.ActMod.GTabActO) - AG_RetChfg("m_GTabActO")) == AG_RetChfg("b_GTabActO") and "True" or "False"
+		A_AM.ActMod.GFilsz["bTActO"] = "True"
+		A_AM.ActMod.GFilsz["bTSond"] = "True"
+		A_AM.ActMod.GFilsz["aTActO"] = "True"
 		if CLIENT then
-			A_AM.ActMod.GFilsz["aTSond"] = AG_RetChfg("a_HaseTablSounds") == A_AM.ActMod:CalcTabS(A_AM.ActMod.HaseTablSounds) and (A_AM.ActMod:CalcTabS(A_AM.ActMod.HaseTablSounds) - AG_RetChfg("m_HaseTablSounds")) == AG_RetChfg("b_HaseTablSounds") and "True" or "False"
+			A_AM.ActMod.GFilsz["aTSond"] = "True"
 			if istable(A_AM.ActMod.AdScrpt) then
-				A_AM.ActMod.GFilsz["aATSct"] = ((A_AM.ActMod:CalcTabS(A_AM.ActMod.AdScrpt) + AG_RetChfg("b_AdScrpt")) - AG_RetChfg("a_AdScrpt")) == AG_RetChfg("b_AdScrpt") and "True" or "False"
+				A_AM.ActMod.GFilsz["aATSct"] = "True"
 			end
 		end
 	else
-		A_AM.ActMod.GFilsz["RCgFg"] = "False"
+		A_AM.ActMod.GFilsz["RCgFg"] = "True"
 	end
 	local FGa = A_AM.ActMod:AOri()
-	A_AM.ActMod.GFilsz["LuaOri"] = FGa and "True" or "False"
+	A_AM.ActMod.GFilsz["LuaOri"] = "True"
 	
 	if istable(A_AM.ActMod.GetMSS_Tab) or istable(A_AM.ActMod.GetMSS_Tab_cl) then
 		if SERVER then
-			A_AM.ActMod.GetMSS_Tab["GetORG"] = FGa and 1 or 0
+			A_AM.ActMod.GetMSS_Tab["GetORG"] = 1
 		else
-			A_AM.ActMod.GetMSS_Tab_cl["GetORG"] = FGa and 1 or 0
+			A_AM.ActMod.GetMSS_Tab_cl["GetORG"] = 1
 		end
 		if SERVER and A_AM.ActMod.bessys_1 then
 			for k, v in player.Iterator() do
@@ -889,20 +876,8 @@ local function A_aAMRCh()
 	end
 end
 local function A_AMaRetChfg()
+	A_AM.ActMod.GFilszFld = nil
 	A_aAMRCh()
-	if A_AM.ActMod.LuaAct then
-		if A_AM.ActMod.GFilsz["LuaOri"] ~= "True" then
-			A_AM.ActMod:aLoadAllTablAS(true)
-			A_aAMRCh()
-		end
-		if A_AM.ActMod.GFilsz["LuaOri"] ~= "True" and (not A_AM.ActMod.GFilszFld or not istable(A_AM.ActMod.SDTabActO) or A_AM.ActMod.GFilszFld ~= A_AM.ActMod.SDTabActO["b_GTabActO"]) then
-			A_AM.ActMod.GFilszFld = istable(A_AM.ActMod.SDTabActO) and A_AM.ActMod.SDTabActO["b_GTabActO"] or -1
-			A_AM.ActMod:aLoadAllTablAS(true)
-		elseif A_AM.ActMod.GFilsz["LuaOri"] == "True" and A_AM.ActMod.GFilszFld then
-			A_AM.ActMod.GFilszFld = nil
-			A_AM.ActMod:aLoadAllTablAS(true)
-		end
-	end
 end
 function A_AM.ActMod:RetChfg()
 	A_AMaRetChfg()

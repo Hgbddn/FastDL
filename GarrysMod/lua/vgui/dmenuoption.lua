@@ -76,7 +76,7 @@ function PANEL:OnMouseReleased( mousecode )
 
 	DButton.OnMouseReleased( self, mousecode )
 
-	if ( self.m_MenuClicking && mousecode == MOUSE_LEFT ) then
+	if ( self.m_MenuClicking && mousecode == MOUSE_LEFT && self:IsEnabled() ) then
 
 		self.m_MenuClicking = false
 		CloseDermaMenus()
@@ -136,10 +136,8 @@ end
 
 function PANEL:PerformLayout( w, h )
 
-	self:SizeToContents()
-	self:SetWide( self:GetWide() + 30 )
-
-	w = math.max( self:GetParent():GetWide(), self:GetWide() )
+	local contentW, contentH = self:GetContentSize()
+	w = math.max( self:GetParent():GetWide(), contentW + 30 )
 
 	self:SetSize( w, 22 )
 

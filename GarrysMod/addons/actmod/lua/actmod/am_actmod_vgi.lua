@@ -15,7 +15,7 @@ A_AM.ActMod.TLang = {"en", "ru", "zh-CN", "de", "tr"}
 local function RoundDT(num) return math.floor(num / 10) * 10 end
 local w,h = ScrW() / 1.08 ,ScrH() / 1.08
 if w > h then w = h else h = w end
-local ActMod_a4_SC = A_AM.ActMod:CGFont("ActMod_a4_SC", {font = "Roboto Regular",size = w*0.016})
+local ActMod_a4_SC = A_AM.ActMod:CGFont("ActMod_a4_SC", {font = "Tahoma", size = math.Round(w * 0.016), weight = 700, antialias = true, extended = true})
 
 A_AM.ActMod.GetIDNames = A_AM.ActMod.GetIDNames or {}
 local GetIDNames = A_AM.ActMod.GetIDNames
@@ -911,6 +911,9 @@ function draw.ScrollingText(text,font,x,y,color,al1,al2,maxWidth,panel,animMode,
     local oldScissor = DisableClipping(false)
     render.SetScissorRect(al1 == 1 and screenX-maxWidth/2 or screenX, al2 == 1 and screenY-textHeight/2 or screenY  ,al1 == 1 and screenX + maxWidth/2 or screenX + maxWidth, al2 == 1 and (screenY + textHeight/2+2) or (screenY + textHeight), true)
 	if ttst then draw.RoundedBox(0,0,0,ScrW(),ScrH(),Color(0,255,0,100)) end
+    if not (drawColor.r == 0 and drawColor.g == 0 and drawColor.b == 0) then
+        draw.SimpleText(text, font, x - data.offset + 1, y + 1, Color(0, 0, 0, math.Round(alpha * 0.75)), al1, al2)
+    end
     draw.SimpleText(text, font, x-data.offset, y, drawColor, al1,al2)
     render.SetScissorRect(0, 0, 0, 0, false)
     DisableClipping(oldScissor)
@@ -948,19 +951,23 @@ function A_AM.ActMod:CTxtMos(Ow, IsH, Ty, txt, txf, aup, useSTBW)
             end
         else
             Ow.CTxg = vgui.Create("DLabel")
+            local useFont = (txf == "CreditsText" or not txf) and "ActMod_HUD_LoadingSub" or txf
 			if useSTBW then
 				Ow.CTxg:SetText("")
 				Ow.CTxg:SetSize(20, 10)
 			else
-				Ow.CTxg:SetText(" " .. txt .. " ")
-				Ow.CTxg:SetFont(txf) Ow.CTxg:SetTextColor( Color(255,255,255) )
-				Ow.CTxg:SizeToContents()
+				Ow.CTxg:SetText("")
+				Ow.CTxg:SetFont(useFont)
+                surface.SetFont(useFont)
+                local tw, th = surface.GetTextSize(tostring(txt or ""))
+				Ow.CTxg:SetSize(math.max(tw + 14, 24), math.max(th + 8, 22))
 			end
             Ow.CTxg:SetDrawOnTop(true)
             Ow.CTxg:SetAlpha(0)
-            Ow.CTxg:AlphaTo(255, 0.3, 0.3)
+            Ow.CTxg:AlphaTo(255, 0.2, 0)
             Ow.CTxg:SetPos(gui.MouseX(), gui.MouseY() - (Ow.CTxg:GetTall() + 5))
             Ow.CTxg.TimRemov = CurTime() + 1
+            A_AM.ActMod.ActiveHoverTooltip = Ow.CTxg
 			
 			if useSTBW then
 				Ow.CTxg.MyText = tostring(txt)
@@ -971,37 +978,49 @@ function A_AM.ActMod:CTxtMos(Ow, IsH, Ty, txt, txf, aup, useSTBW)
 				if useSTBW then
 					if not s.lines or not s.lineHeight then
 						if useSTBW == 1 then
-							s.lines = WrapText(s.MyText, txf, w - 10)
+							s.lines = WrapText(s.MyText, useFont, w - 10)
 						else
-							s.lines = SplitTextByWords(s.MyText, 500 , txf)
+							s.lines = SplitTextByWords(s.MyText, 500 , useFont)
 						end
-						surface.SetFont(txf)
+						surface.SetFont(useFont)
 						local _, lineHeight = surface.GetTextSize("Test")
 						s.lineHeight = lineHeight
 						local zw,zh = 10,20
 						for i, line in ipairs(s.lines) do
-							surface.SetFont(txf)
+							surface.SetFont(useFont)
 							local aw, ah = surface.GetTextSize(line)
 							zw = math.max(aw,zw)
 							zh = math.max(i * s.lineHeight,zh)
 						end
-						s:SetSize(zw+10, zh+3)
+						s:SetSize(zw+14, zh+8)
 					end
 				end
-                local amov = math.Clamp(1 * math.sin(CurTime() * 1), 0,1)
-                if Ty then
-                    draw.RoundedBox(0, 0, 0, w, h, Color(Ty[1]*amov, Ty[2]*amov, Ty[3]*amov, 255))
-                else
-                    draw.RoundedBox(0, 0, 0, w, h, Color(70*amov, 60*amov, 155*amov, 255))
-                end
-				surface.SetDrawColor(Color(0, 255, 255, 255))
-				surface.DrawOutlinedRect(0, 0, w, h, 1 )
+
+                local rad = 4
+                local bgCol = (GetCleanHUDTransparentColor and GetCleanHUDTransparentColor(230)) or Color(28, 38, 52, 230)
+                local baseCol = (GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(75, 115, 160, 255)
+                local accentCol = Color(math.min(baseCol.r + 55, 255), math.min(baseCol.g + 55, 255), math.min(baseCol.b + 55, 255), 240)
+
+                draw.RoundedBox(rad, 0, 0, w, h, accentCol)
+                draw.RoundedBox(math.max(rad - 1, 0), 1, 1, w - 2, h - 2, bgCol)
+
+                local txtCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor(bgCol))
+                    or (((bgCol.r + bgCol.g + bgCol.b) >= 500) and Color(0, 0, 0, 255) or Color(255, 255, 255, 255))
+                local isDarkText = (txtCol.r == 0 and txtCol.g == 0 and txtCol.b == 0)
+
 				if useSTBW and s.lines and s.lineHeight then
 					for i, line in ipairs(s.lines) do
-						draw.SimpleTextOutlined(line, txf, 5, (i - 1) * s.lineHeight, Color(255,255,255, 255), 0, 0, 1, Color(0, 0, 255, 255))
+						if not isDarkText then
+                            draw.SimpleText(line, useFont, 7 + 1, (i - 1) * s.lineHeight + 4 + 1, Color(0, 0, 0, 200), 0, 0)
+						end
+						draw.SimpleText(line, useFont, 7, (i - 1) * s.lineHeight + 4, txtCol, 0, 0)
 					end
 				elseif not useSTBW then
-					draw.SimpleTextOutlined(" " .. txt .. " ", txf, 0, 0, Color(0, 0, 0, 0), 0, 0, 1, Color(0, 0, 255, 255))
+                    local textStr = tostring(txt or "")
+					if not isDarkText then
+						draw.SimpleText(textStr, useFont, math.Round(w * 0.5) + 1, math.Round(h * 0.5) + 1, Color(0, 0, 0, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+					end
+					draw.SimpleText(textStr, useFont, math.Round(w * 0.5), math.Round(h * 0.5), txtCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 				end
             end
             Ow.CTxg.Think = function(s)
@@ -1147,135 +1166,12 @@ end
 local function AC_butCh(Gw, Gh, Zw, Zh, es, txt, alp) return A_AM.ActMod:AC_butCh(Gw, Gh, Zw, Zh, es, txt, alp) end
 
 function A_AM.ActMod:aSatLang(self)
-	self.LitLang = vgui.Create("DButton")
-	self.LitLang:SetText("")
-	self.LitLang:SetSize(ScrW(), ScrH())
-	self.LitLang:SetCursor("arrow") self.LitLang:MakePopup()
-	self.LitLang:SetKeyboardInputEnabled(false)
-	self.LitLang:Center() self.LitLang:SetAlpha(0) self.LitLang:AlphaTo(255, 0.2)
-	self.LitLang.Tamodwn = CurTime() + 0.3
-	self.LitLang.Tamodwn2 = CurTime() + 1.4
-	self.LitLang.Tamodwn3 = CurTime() + 2.2
-	self.LitLang.nV = A_AM.ActMod.numV
-	self.LitLang.Paint = function(ste, aw, ah)
-		draw.RoundedBox(0, 0, 0, aw, ah, Color(0, 0, 50, 210))
-		local aup = 70
-		local atmr3_t = math.Clamp( (CurTime() - ste.Tamodwn3)/0.6 ,0,1)
-		if atmr3_t >= 1 then
-			draw.SimpleText("ActMod", "CloseCaption_Normal", aw / 2 -35, aup-20, Color(220, 255, 255, 255), 1, 1)
-			draw.SimpleText("v".. ste.nV or "v9.7", "CloseCaption_Normal", aw / 2 + 35, aup-20, Color(220, 255, 255, 255), 1, 1)
-			draw.SimpleText("AhmedMake400", "CloseCaption_BoldItalic", aw-50, ah-100, Color(200, 255, 255, 255), 2, 1)
-		else
-			local atmr = aup*math.ease.OutElastic( math.Clamp( (CurTime() - ste.Tamodwn) ,0,1) )
-			local atmr2_t = math.Clamp( (CurTime() - ste.Tamodwn2)/0.6 ,0,1)
-			local atmr2 = 35*atmr2_t
-			draw.SimpleText("ActMod", "CloseCaption_Normal", aw / 2 -(atmr2), atmr-20, Color(220, 255, 255, 255), 1, 1)
-			draw.SimpleText("v".. ste.nV or "v9.7", "CloseCaption_Normal", aw / 2 + atmr2, aup-20, Color(220, 255, 255, 255*math.ease.InExpo(atmr2_t)), 1, 1)
-			draw.SimpleText("AhmedMake400", "CloseCaption_BoldItalic", aw-50, ah-100, Color(200, 255, 255, 255*atmr3_t), 2, 1)
-		end
-	end
-	self.LitLang.DoClick = function(s)
-		if IsValid(self.PanelLoadigAnimSy) then self.PanelLoadigAnimSy:Remove() end
-		if IsValid(self.Frame) then self.Frame:Remove() end
-	end
-	self.LitLang.DoRightClick = function(s)
-		if IsValid(self.PanelLoadigAnimSy) then self.PanelLoadigAnimSy:Remove() end
-		if IsValid(self.Frame) then self.Frame:Remove() end
-	end
-
-
-	local Tl = ""
-	local DPa_ = vgui.Create("DPanel", self.LitLang)
-	DPa_:SetSize(200, 120)
-	DPa_:Center()
-	DPa_:MakePopup()
-	DPa_.Paint = function(ste, aw, ah)
-		draw.RoundedBox(0, 0, 0, aw, ah, Color(70, 90, 100, 255))
-		draw.RoundedBox(5, 5, 5, aw - 10, ah - 10, Color(50, 60, 70, 255))
-
-		if Tl == "en" then
-			draw.SimpleText("Welcome", "ActMod_a1", aw / 2, ah / 2, Color(220, 255, 255, 255), 1, 1)
-		elseif Tl == "ru" then
-			draw.SimpleText("Приветствуем", "ActMod_a1", aw / 2, ah / 2, Color(220, 255, 255, 255), 1, 1)
-		elseif Tl == "zh-CN" then
-			draw.SimpleText("欢迎光临", "ActMod_a1", aw / 2, ah / 2, Color(220, 255, 255, 255), 1, 1)
-		elseif Tl == "de" then
-			draw.SimpleText("Willkommen", "ActMod_a1", aw / 2, ah / 2, Color(220, 255, 255, 255), 1, 1)
-		elseif Tl == "tr" then
-			draw.SimpleText("Hoş geldin", "ActMod_a1", aw / 2, ah / 2, Color(220, 255, 255, 255), 1, 1)
-		end
-	end
-
-	local Tmp = ""
-	local Tmp2 = ""
-	local DButCh = vgui.Create("DComboBox", DPa_)
-	DButCh:SetSize(180, 25)
-	DButCh:SetPos(10, 10)
-	DButCh:SetText(aR:T("ALanguage"))
-	DButCh:AddChoice("1- English", "en", false, "flags16/gb.png")
-	DButCh:AddChoice("2- China", "zh-CN", false, "flags16/cn.png")
-	DButCh:AddChoice("3- Russian", "ru", false, "flags16/ru.png")
-	DButCh:AddChoice("4- Germany", "de", false, "flags16/de.png")
-	DButCh:AddChoice("5- Turkish", "tr", false, "flags16/tr.png")
-	DButCh.OnSelect = function(pl, index, value, data)
-		surface.PlaySound("garrysmod/ui_return.wav")
-		Tl = data
-
-		if data == "en" then
-			Tmp = "    ==>  English  <==  "
-			Tmp2 = "OK"
-		elseif data == "ru" then
-			Tmp = "    ==>  Russian  <==  "
-			Tmp2 = "ок"
-		elseif data == "zh-CN" then
-			Tmp = "    ==>  China  <==  "
-			Tmp2 = "好的"
-		elseif data == "de" then
-			Tmp = "    ==>  Germany  <==  "
-			Tmp2 = "OK"
-		elseif data == "tr" then
-			Tmp = "    ==>  Turkish  <==  "
-			Tmp2 = "TAMAM"
-		end
-
-		DButCh:SetText(Tmp)
-	end
-
-	local DBu_1 = vgui.Create("DButton", DPa_)
-	DBu_1:SetSize(90, 25)
-	DBu_1:SetPos(DPa_:GetWide() / 2 - DBu_1:GetWide() / 2, 80)
-	DBu_1:SetText("")
-	DBu_1.Think = function()
-		if Tl ~= "" then
-			DBu_1:SetDisabled(false)
-		else
-			DBu_1:SetDisabled(true)
-		end
-	end
-	DBu_1.DoClick = function(s)
-		surface.PlaySound("garrysmod/content_downloaded.wav")
-		aR:R_T(Tl, true)
-		if IsValid(self.LitLang) then self.LitLang:Remove() end
-		self:Close(true)
-	end
-	DBu_1.Paint = function(ste, w, h)
-		if Tmp == "" then
-			draw.RoundedBox(5, 0, 0, w, h, Color(70, 30, 20, 255))
-			draw.SimpleText("---", "ActMod_a5", w / 2, h / 2, Color(220, 255, 255, 255), 1, 1)
-		else
-			if ste:IsDown() then
-				draw.RoundedBox(5, 0, 0, w, h, Color(150, 130, 80, 255))
-				draw.SimpleText(Tmp2, "ActMod_a1", w / 2, h / 2, Color(255, 255, 155, 255), 1, 1)
-				surface.SetDrawColor(Color(100, 255, 255, math.max(155 + (100 * math.sin(CurTime() * 15)), 0)))
-				surface.DrawOutlinedRect(0, 0, w, h, 1)
-			elseif ste:IsHovered() then
-				draw.RoundedBox(5, 0, 0, w, h, Color(70, 122, 40, 255))
-				draw.SimpleText(Tmp2, "ActMod_a5", w / 2, h / 2, Color(155, 255, 155, 255), 1, 1)
-			else
-				draw.RoundedBox(5, 0, 0, w, h, Color(30, 80, 120, math.max(200 + (155 * math.sin(CurTime() * 7)), 0)))
-				draw.SimpleText(Tmp2, "ActMod_a5", w / 2, h / 2, Color(220, 255, 255, 255), 1, 1)
-			end
-		end
+	local tttLang = (GetConVar("ttt_language") and GetConVar("ttt_language"):GetString()) or "de"
+	if tttLang ~= "en" and tttLang ~= "de" then tttLang = "de" end
+	RunConsoleCommand("actmod_cl_lang", tttLang)
+	if IsValid(self) and IsValid(self.LitLang) then
+		self.LitLang:Remove()
+		self.LitLang = nil
 	end
 end
 local function aSatLang(self) A_AM.ActMod:aSatLang(self) end
@@ -1407,206 +1303,289 @@ end
 
 local ttHuDA,ttHuDASt,ttHuDAnbb,ZDAnbb = 0,SysTime(),1,60
 
-hook.Add("HUDPaint", "ActMod_Hud", function()
-    local ply = LocalPlayer()
-    if GetConVarNumber("actmod_cl_eloading") ~= 0 and A_AM.ActMod.clo_IMeun_Num > 0 and not A_AM.ActMod.A_ActMod_RedyUse and not ply.ActMod_UseMenu then
-		local WiDl
-		local ZW, ZH = 380, 80
-		local SW, SH = ScrW() / 2 - ZW / 2, 50
-		local PSho = A_AM.ActMod.A_ActMod_RedyUse_Num or 1
-		draw.RoundedBox(15, SW + 0, SH - 20, ZW, ZH + 20, Color(50, 70, 90, 150))
-		draw.RoundedBox(15, SW + 0, SH - 20, ZW, 30, Color(20, 30, 50, 100))
-		draw.SimpleText("ActMod  " .. aR:T("wndSetup") .. "AhmedMake400 )  V" .. A_AM.ActMod.Mounted["Version ActMod"], "ActMod_a3", SW + ZW / 2, SH - 5, Color(180, 235, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-		draw.SimpleText(aR:T("wndSetup_Checks"), "ActMod_a6", SW + 2, SH + 25, Color(180, 255, 200, 255), nil, TEXT_ALIGN_CENTER)
-		draw.SimpleText(PSho .. "%", "ActMod_a6", SW + ZW - 57, SH + 25, Color(180, 255, 200, 255), nil, TEXT_ALIGN_CENTER)
-		draw.RoundedBox(10, SW + 10, SH + 40, ZW - 20, 30, Color(20, 20, 20, 150))
-		draw.RoundedBox(10, SW + 10, SH + 40, math.Remap( PSho, 0, 100, 0, ZW-20 ), 30, Color(20, 150, 100, 150))
+if CLIENT then
+    local function EnsureActModHUDFonts()
+        local sc = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        surface.CreateFont("ActMod_HUD_LoadingTitle", {
+            font = "Tahoma",
+            size = math.max(math.Round(15 * sc), 14),
+            weight = 700,
+            extended = true,
+            antialias = true
+        })
+        surface.CreateFont("ActMod_HUD_LoadingSub", {
+            font = "Tahoma",
+            size = math.max(math.Round(13 * sc), 12),
+            weight = 700,
+            extended = true,
+            antialias = true
+        })
+        surface.CreateFont("ActMod_HUD_LoadingBar", {
+            font = "Tahoma",
+            size = math.max(math.Round(13 * sc), 12),
+            weight = 700,
+            extended = true,
+            antialias = true
+        })
+    end
+    EnsureActModHUDFonts()
+    hook.Add("InitPostEntity", "ActMod_HUD_Fonts_Init", EnsureActModHUDFonts)
+end
 
-        if PSho >= 100 then
-            WiDl = aR:T("wndSetupL_HBComp")
-        elseif PSho >= 95 then
-            WiDl = aR:T("wndSetupL_Effects")
-        elseif PSho >= 91 then
-            WiDl = aR:T("wndSetupL_Background")
-        elseif PSho >= 66 then
-            WiDl = aR:T("wndSetupL_Emotes")
-        elseif PSho >= 35 then
-            WiDl = aR:T("wndSetupL_Sounds")
-        elseif PSho >= 30 then
-            WiDl = aR:T("wndSetupL_AaCing") .. "..."
-        elseif PSho >= 16 then
-            WiDl = aR:T("wndSetupL_AaCing") .. ".."
-        elseif PSho >= 4 then
-            WiDl = aR:T("wndSetupL_AaCing") .. "."
+local function IsGhostOrSpectator(ply)
+    if not IsValid(ply) or not ply:IsPlayer() then return false end
+    if ply.IsGhost and ply:IsGhost() then return true end
+    if SpecDM and isfunction(SpecDM.IsGhost) and SpecDM.IsGhost(ply) then return true end
+    if ply.specdm and ply:GetNWBool("SpecDM_IsGhost", false) then return true end
+    if not ply:Alive() then return true end
+    if ply.IsSpec and ply:IsSpec() then return true end
+    if ply:Team() == (TEAM_SPEC or 1002) then return true end
+    if ply.GetObserverMode and ply:GetObserverMode() ~= 0 then return true end
+    return false
+end
+
+local function GetPlayerTeamGlowColor(targetPly)
+    local client = LocalPlayer()
+    local roleNONE = _G.ROLE_NONE or 3
+
+    -- 0. Wenn Zielspieler oder Betrachter im Ghost Deathmatch (SpecDM) oder Spectator ist:
+    -- Partner-Emote Shimmer & Kreis immer in Spectator-Gelb darstellen!
+    if IsGhostOrSpectator(targetPly) or IsGhostOrSpectator(client) then
+        local specCol = (roles and roles.SPECTATOR and roles.SPECTATOR.color) or Color(240, 200, 50, 255)
+        return Color(specCol.r, specCol.g, specCol.b, 255)
+    end
+
+    -- 1. Falls die Rolle des Zielspielers dem Client bekannt ist (z. B. Detective oder Traitor-Kollege), nutze dessen Rollen-/Teamfarbe
+    if IsValid(targetPly) then
+        local targetSubRole = (targetPly.GetSubRole and isfunction(targetPly.GetSubRole) and targetPly:GetSubRole()) or nil
+        if targetSubRole and targetSubRole ~= roleNONE then
+            if targetPly.GetRoleColor and isfunction(targetPly.GetRoleColor) then
+                local col = targetPly:GetRoleColor()
+                if col and IsColor(col) then return col end
+            end
+            if targetPly.GetRoleData and isfunction(targetPly.GetRoleData) then
+                local rd = targetPly:GetRoleData()
+                if rd and rd.color and IsColor(rd.color) then return rd.color end
+            end
+            if TEAMS and targetPly.GetTeam and isfunction(targetPly.GetTeam) then
+                local tm = targetPly:GetTeam()
+                if tm and TEAMS[tm] and TEAMS[tm].color and IsColor(TEAMS[tm].color) then
+                    return TEAMS[tm].color
+                end
+            end
+        end
+    end
+
+    -- 2. In TTT2 hat ein unidentifizierter Mitspieler clientseitig ROLE_NONE (grau).
+    -- Verwende daher analog zu TTT2 TargetID (client:GetRoleColor()) dynamisch die eigene Team-/Rollenfarbe des Spielers.
+    if IsValid(client) then
+        if client.GetRoleColor and isfunction(client.GetRoleColor) then
+            local col = client:GetRoleColor()
+            if col and IsColor(col) then
+                local clientSubRole = (client.GetSubRole and isfunction(client.GetSubRole) and client:GetSubRole()) or nil
+                if not clientSubRole or clientSubRole ~= roleNONE then
+                    return col
+                end
+            end
+        end
+        if client.GetRoleData and isfunction(client.GetRoleData) then
+            local rd = client:GetRoleData()
+            if rd and rd.color and IsColor(rd.color) then
+                local clientSubRole = (client.GetSubRole and isfunction(client.GetSubRole) and client:GetSubRole()) or nil
+                if not clientSubRole or clientSubRole ~= roleNONE then
+                    return rd.color
+                end
+            end
+        end
+        if TEAMS and client.GetTeam and isfunction(client.GetTeam) then
+            local tm = client:GetTeam()
+            if tm and TEAMS[tm] and TEAMS[tm].color and IsColor(TEAMS[tm].color) then
+                return TEAMS[tm].color
+            end
+        end
+        if client.GetRole and isfunction(client.GetRole) then
+            local r = client:GetRole()
+            if r == (ROLE_TRAITOR or 1) then
+                return (roles and roles.TRAITOR and roles.TRAITOR.color) or Color(220, 50, 50)
+            elseif r == (ROLE_DETECTIVE or 2) then
+                return (roles and roles.DETECTIVE and roles.DETECTIVE.color) or Color(50, 120, 240)
+            elseif r == (ROLE_INNOCENT or 0) then
+                return (roles and roles.INNOCENT and roles.INNOCENT.color) or Color(50, 200, 50)
+            end
+        end
+    end
+
+    local plyToCheck = IsValid(targetPly) and targetPly or client
+    if IsValid(plyToCheck) and plyToCheck.Team and isfunction(plyToCheck.Team) and team and team.GetColor then
+        local tm = plyToCheck:Team()
+        local col = team.GetColor(tm)
+        if col and IsColor(col) and (col.r ~= 255 or col.g ~= 255 or col.b ~= 255) then
+            return col
+        end
+    end
+    return (roles and roles.INNOCENT and roles.INNOCENT.color) or Color(50, 200, 50)
+end
+_G.ActMod_GetPlayerTeamGlowColor = GetPlayerTeamGlowColor
+
+
+-- ActMod Partner Emotes HUD: Im PostDrawHUD gezeichnet (hoehere Prioritaet als Weapon Tooltips, exakt 10 * scale Bodenabstand)
+hook.Add("PostDrawHUD", "ActMod_PartnerHUD", function()
+    local ply = LocalPlayer()
+    if not IsValid(ply) or not ply:Alive() or ply:GetObserverMode() ~= 0 then return end
+    if GetConVarNumber("actmod_sv_alowdsyn") <= 0 or GetConVarNumber("actmod_sv_showhisyn") <= 0 or GetConVarNumber("actmod_cl_showhisyn") <= 0 then return end
+
+    local TolPl2, TolPl2OK = false, false
+    local Pl2 = ply.ActMod_TSndJ_LookTPly
+    if (ply.ActMod_tLtok or 0) < CurTime() then
+        ply.ActMod_tLtok = CurTime() + 0.2
+        ply.ActMod_TSndJ_LookTPly_tok = A_AM.ActMod:aGetLookTPly(ply)
+    end
+    local Pl2_ok = ply.ActMod_TSndJ_LookTPly_tok
+
+    if ply.ActMod_TRStopAct and ply.ActMod_TRStopAct > CurTime() + 0.5 and ply.ActMod_TRStopAct - CurTime() < 1.8 and ply:A_ActMod_GetIsAct() then
+        if ttHuDAnbb == 1 then ttHuDASt = SysTime() ttHuDAnbb = 2 end
+        ttHuDA = math.Round(Lerp((SysTime() - ttHuDASt) / 0.3, ttHuDA, 255))
+    elseif IsValid(Pl2) or IsValid(ply.ActMod_GPl2TSndJ) then
+        if ttHuDAnbb == 1 then ttHuDASt = SysTime() ttHuDAnbb = 2 end
+        ttHuDA = math.Round(Lerp((SysTime() - ttHuDASt) / 0.3, ttHuDA, 255))
+    else
+        if ttHuDAnbb == 2 then ttHuDASt = SysTime() ttHuDAnbb = 1 end
+        if ttHuDA > 0 then ttHuDA = math.Round(Lerp((SysTime() - ttHuDASt) / 0.1, ttHuDA, 0)) end
+    end
+
+    TolPl2 = IsValid(Pl2_ok) and (IsValid(Pl2) and Pl2 == Pl2_ok and IsValid(ply.ActMod_GkTPlyTJn) and ply.ActMod_GkTPlyTJn == Pl2_ok)
+    TolPl2OK = IsValid(Pl2_ok) and (IsValid(Pl2) and Pl2 == Pl2_ok and IsValid(ply.ActMod_GkTPlyTJn) and ply.ActMod_GkTPlyTJn == Pl2_ok and IsValid(ply.ActMod_GPl2TSndJ) and ply.ActMod_GPl2TSndJ == ply.ActMod_GkTPlyTJn)
+
+    if ttHuDA > 0 then
+        local scale = (appearance and appearance.GetGlobalScale and appearance.GetGlobalScale()) or 1.0
+        local alphaFrac = math.Clamp(ttHuDA / 255, 0, 1)
+        local isShiftDown = ply:KeyDown(IN_SPEED)
+        local isEDown = ply:KeyDown(IN_USE)
+        local fontKey = "weapon_hud_help_key"
+        local fontText = "weapon_hud_help"
+        local keyPadX, keyPadY = 6 * scale, 3 * scale
+
+        local key1 = "SHIFT"
+        local key2 = "E"
+        surface.SetFont(fontKey)
+        local kw1, kh1 = surface.GetTextSize(key1)
+        local kw2, kh2 = surface.GetTextSize(key2)
+        if not kw1 or kw1 <= 0 then
+            fontKey = "DermaDefaultBold"
+            fontText = "DermaDefaultBold"
+            surface.SetFont(fontKey)
+            kw1, kh1 = surface.GetTextSize(key1)
+            kw2, kh2 = surface.GetTextSize(key2)
+        end
+        local boxK1W = kw1 + keyPadX * 2
+        local boxK2W = kw2 + keyPadX * 2
+        local boxKH = math.max(kh1, kh2) + keyPadY * 2
+
+        local isGerman = false
+        if LANG and LANG.ActiveLanguage then
+            local activeLang = string.lower(tostring(LANG.ActiveLanguage))
+            isGerman = (activeLang == "de" or activeLang == "deutsch" or activeLang:find("german") ~= nil)
+        elseif GetConVar and ConVarExists("ttt_language") then
+            local cv = GetConVar("ttt_language")
+            local langStr = cv and string.lower(cv:GetString() or "") or ""
+            isGerman = (langStr == "de" or langStr == "deutsch" or langStr:find("german") ~= nil)
         else
-            WiDl = aR:T("wndSetupL_Please")
+            local gLang = string.lower(GetConVarString("gmod_language") or "")
+            isGerman = (gLang == "de" or gLang == "deutsch" or gLang:find("german") ~= nil)
         end
 
-        draw.SimpleText(WiDl, "ActMod_a5", SW + ZW / 2, SH + 55, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-	elseif GetConVarNumber("actmod_cl_eloading") == 0 and A_AM.ActMod.clo_IMeun_Num > 0 and not A_AM.ActMod.A_ActMod_RedyUse then
-		local ZW, ZH = 100, 50
-		local SW, SH = 10, 100
-		local PSho = A_AM.ActMod.A_ActMod_RedyUse_Num or 1
-		draw.RoundedBox(10, SW + 0, SH - 10, ZW, 30, Color(20, 30, 50, 140))
-		draw.SimpleText("ActMod", "ActMod_a3", SW + 6, SH - 10, Color(180, 255, 200, 255))
-		draw.SimpleText(PSho .. "%", "ActMod_a4", SW + ZW - 5, SH - 6, Color(180, 255, 200, 255), 2)
-		draw.RoundedBox(0, SW + 5, SH + 9, ZW - 10, 6, Color(20, 20, 20, 150))
-		draw.RoundedBox(0, SW + 5, SH + 9, math.Remap( PSho, 0, 100, 0, ZW - 10 ), 6, Color(20, 200, 100, 180))
+        local actionText = isGerman and "mitmachen" or "join"
+        if (ply.ActMod_TSndJ or 0) > CurTime() then
+            actionText = ply.ActMod_GNamTSndJ or "..."
+        elseif (ply.ActMod_TRStopAct or 0) > CurTime() - 0.2 and ply:A_ActMod_GetIsAct() then
+            actionText = isGerman and "stoppen" or "stop"
+        end
 
-	else
-		if GetConVarNumber("actmod_sv_alowdsyn") <= 0 or GetConVarNumber("actmod_sv_showhisyn") <= 0 or GetConVarNumber("actmod_cl_showhisyn") <= 0 or not ply:Alive() or ply:GetObserverMode() ~= 0 then return end
-		local TolPl2,TolPl2OK = false,false
-		local Pl2 = ply.ActMod_TSndJ_LookTPly
-		if (ply.ActMod_tLtok or 0) < CurTime() then ply.ActMod_tLtok = CurTime() + 0.2 ply.ActMod_TSndJ_LookTPly_tok = A_AM.ActMod:aGetLookTPly( ply ) end
-		local Pl2_ok = ply.ActMod_TSndJ_LookTPly_tok
-		
-		if ply.ActMod_TRStopAct and ply.ActMod_TRStopAct > CurTime()+0.5 and ply.ActMod_TRStopAct-CurTime() < 1.8 and ply:A_ActMod_GetIsAct() then
-			if ttHuDAnbb == 1 then ttHuDASt = SysTime() ttHuDAnbb = 2 end
-			ttHuDA = math.Round( Lerp( (SysTime() - ttHuDASt )/0.3, ttHuDA, 255) )
-		elseif IsValid(Pl2) or IsValid(ply.ActMod_GPl2TSndJ) then
-			if ttHuDAnbb == 1 then ttHuDASt = SysTime() ttHuDAnbb = 2 end
-			ttHuDA = math.Round( Lerp( (SysTime() - ttHuDASt )/0.3, ttHuDA, 255) )
-			if ttHuDA < 255 then ttHuDA = math.Round( Lerp( (SysTime() - ttHuDASt )/0.3, ttHuDA, 255) ) end
-		else
-			if ttHuDAnbb == 2 then ttHuDASt = SysTime() ttHuDAnbb = 1 end
-			if ttHuDA > 0 then ttHuDA = math.Round( Lerp( (SysTime() - ttHuDASt )/0.1, ttHuDA, 0) ) end
-		end
-		TolPl2 = IsValid(Pl2_ok) and (IsValid(Pl2) and Pl2 == Pl2_ok and IsValid(ply.ActMod_GkTPlyTJn) and ply.ActMod_GkTPlyTJn == Pl2_ok)
-		TolPl2OK = IsValid(Pl2_ok) and (IsValid(Pl2) and Pl2 == Pl2_ok and IsValid(ply.ActMod_GkTPlyTJn) and ply.ActMod_GkTPlyTJn == Pl2_ok and IsValid(ply.ActMod_GPl2TSndJ) and ply.ActMod_GPl2TSndJ == ply.ActMod_GkTPlyTJn)
-		
-		
-		if ply:Alive() and ply:GetObserverMode() == 0 and ttHuDA > 0 then
-			local WiDl
-			local aiSVR = A_AM.ActMod:IsVR(ply)
-			local ZW ,ZH ,Za = 60 ,15 ,70
-			Za = Za + ttHuDA*0.1
-			if aiSVR then
-				ZH = ZH*1.4
-			end
-			
-			local Tx1,Tx2,Tx3,Tx4,Tx5
-			local zTxt1,zTxt2,zTxt3,zTxt4,zTxt5 = 0,0,0,0,0
-			if (ply.ActMod_TSndJ or 0) < CurTime() and ply.ActMod_TRStopAct and ply.ActMod_TRStopAct > CurTime() -0.2 and ply:A_ActMod_GetIsAct() then
-				Tx1,Tx2 = "[>] Stopping " ,"    ".. string.rep("•", math.Round((CurTime()*6)%4))
-				zTxt1 = A_AM.ActMod.aGetTextSize(Tx1,"ActMod_a3")
-				zTxt2 = A_AM.ActMod.aGetTextSize(" .......","ActMod_a1")
-				local zTxt = math.min(zTxt1+zTxt2,170)
-				ZW = ZW + zTxt
-			elseif (ply.ActMod_TSndJ or 0) > CurTime() then
-				Tx1,Tx2,Tx3 = "→  " ,(ply.ActMod_GNamTSndJ or "...") ,"    ".. string.rep("»", math.Round((CurTime()*6)%4))
-				zTxt1 = A_AM.ActMod.aGetTextSize(Tx1,"ActMod_a3")
-				zTxt2 = A_AM.ActMod.aGetTextSize(Tx2,"ActMod_a3")
-				zTxt3 = A_AM.ActMod.aGetTextSize("  .......","ActMod_a1")
-				local zTxt = math.min(zTxt1+zTxt2+zTxt3,400)
-				ZW = ZW + zTxt
-			elseif not ply:A_ActMod_GetIsAct() and IsValid(Pl2) then
-				if aiSVR then
-					Tx1,Tx2,Tx3 = " " ,"[ B ]  /  [ Reload ]" ,"     ⤵"
-					zTxt1 = A_AM.ActMod.aGetTextSize(Tx1,"ActMod_a6")
-					zTxt2 = A_AM.ActMod.aGetTextSize(Tx2,"ActMod_a6")
-					zTxt3 = A_AM.ActMod.aGetTextSize(Tx3,"ActMod_a6")
-					local zTxt = math.min(zTxt1+zTxt2+zTxt3,400)
-					ZW = ZW + zTxt
-				else
-					Tx1,Tx2,Tx3,Tx4,Tx5 = " " ,"[ SHIFT ]" ,"  +  " ,"[ E ]" ,"     ⤵"
-					zTxt1 = A_AM.ActMod.aGetTextSize(Tx1,"ActMod_a3")
-					zTxt2 = A_AM.ActMod.aGetTextSize(Tx2,"ActMod_a3")
-					zTxt3 = A_AM.ActMod.aGetTextSize(Tx3,"ActMod_a3")
-					zTxt4 = A_AM.ActMod.aGetTextSize(Tx4,"ActMod_a3")
-					zTxt5 = A_AM.ActMod.aGetTextSize(Tx5,"ActMod_a3")
-					local zTxt = math.min(zTxt1+zTxt2+zTxt3+zTxt4+zTxt5,400)
-					ZW = ZW + zTxt
-				end
-			end
-			local ZWSpd = 20
-			if ttHuDAnbb == 1 then ZWSpd = 35 end
-			if ttHuDA < 255 then
-				ZDAnbb = Lerp( math.Remap(255-ttHuDA,0,255,0,1), ZDAnbb, ZW)
-			else
-				ZDAnbb = Lerp( FrameTime()*ZWSpd, ZDAnbb, ZW)
-			end
-			local ZW,ZAH = ZDAnbb,25
-			if aiSVR then ZAH = 31 end
-			local SW, SH = ScrW() / 2 - ZW / 2, ScrH() - 160
-			local PSho = A_AM.ActMod.A_ActMod_RedyUse_Num or 2
-			draw.RoundedBox(15, SW + 0, SH - 20 +Za, ZW, ZH + 20, Color(50, 70, 90, math.min(ttHuDA,150)))
-			local amov = math.max(60 + (40 * math.sin(CurTime() * 6)), 0)
-			
-			if not ply.atrky then ply.atrky = 0 end
-			if not aiSVR then
-				if not ply:KeyDown(IN_USE) and not ply:KeyDown(IN_SPEED) then
-					ply.atrky = 0
-				else
-					if not ply:KeyDown(IN_USE) and ply:KeyDown(IN_SPEED) then ply.atrky = 0 end
-					if ply:KeyDown(IN_USE) and not ply:KeyDown(IN_SPEED) and ply.atrky == 0 then ply.atrky = -1 end
-					if ply:KeyDown(IN_SPEED) and ply.atrky == 0 then ply.atrky = 1 end
-				end
-			end
-			
-			if ply.atrky == 1 and TolPl2OK and ply:KeyDown(IN_SPEED) and ply:KeyDown(IN_USE) then
-				if (ply.ActMod_TSndJ or 0) > CurTime() then
-					draw.RoundedBox(10, SW + 10, SH - 13.5 +Za, ZW - 20, ZAH, Color(100, 100, 100, math.min(ttHuDA,180 + (50 * math.sin(CurTime() * 6)))))
-				else
-					draw.RoundedBox(10, SW + 10, SH - 13.5 +Za, ZW - 20, ZAH, Color(100, 150, 100, math.min(ttHuDA,180 + (50 * math.sin(CurTime() * 6)))))
-				end
-			elseif ply.atrky == -1 and TolPl2 and ply:KeyDown(IN_SPEED) and ply:KeyDown(IN_USE) then
-				local lo1,lo2 = (1 * math.sin(CurTime() * 50)) ,(-1 * math.sin(CurTime() * 42))
-				draw.RoundedBox(10, SW + 10 +lo1, SH - 13.5 +Za +lo2, ZW - 20, ZAH, Color(150, 70, 40, math.min(ttHuDA,180 + (50 * math.sin(CurTime() * 6)))))
-			else
-				if ply.atrky == -1 then
-					draw.RoundedBox(10, SW + 10, SH - 13.5 +Za, ZW - 20, ZAH, Color(amov, amov-50, amov-50, math.min(ttHuDA,180 + (50 * math.sin(CurTime() * 6)))))
-				elseif ply.atrky == 1 and TolPl2 and ply:KeyDown(IN_SPEED) then
-					draw.RoundedBox(10, SW + 10, SH - 13.5 +Za, ZW - 20, ZAH, Color(amov-50, amov, amov, math.min(ttHuDA,180 + (50 * math.sin(CurTime() * 6)))))
-				else
-					draw.RoundedBox(10, SW + 10, SH - 13.5 +Za, ZW - 20, ZAH, Color(amov, amov, amov, math.min(ttHuDA,180 + (50 * math.sin(CurTime() * 6)))))
-				end
-			end
+        surface.SetFont(fontText)
+        local tw, th = surface.GetTextSize(actionText)
+        local padding = 10 * scale
+        local wBox = boxK1W + math.Round(12 * scale) + boxK2W + padding + tw + padding * 2
+        local hBox = math.max(boxKH, th) + padding * 2
+        local bottomMargin = 10 * scale
+        local xBox = math.Round(0.5 * (ScrW() - wBox))
+        local yBox = math.Round(ScrH() - hBox - bottomMargin)
 
-			if Tx1 and Tx2 then
-				local asp,sza = 30, SH + Za - 11
-				if (ply.ActMod_TRStopAct or 0) > CurTime()-0.2 and ply:A_ActMod_GetIsAct() then
-					draw.SimpleText(Tx1, aiSVR and "ActMod_a6" or "ActMod_a3", SW + asp, sza, Color(255, 255, math.min(ttHuDA,100 + (100 * math.sin(CurTime() * 30))), ttHuDA), 0, 0)
-					draw.SimpleText(Tx2, "ActMod_a1", SW + asp + zTxt1, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-				elseif (ply.ActMod_TSndJ or 0) > CurTime() then
-					draw.SimpleText(Tx1, aiSVR and "ActMod_a6" or "ActMod_a3", SW + asp, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-					draw.SimpleText(Tx2, aiSVR and "ActMod_a6" or "ActMod_a3", SW + asp + zTxt1, sza, Color(150, 255, 255, math.min(ttHuDA,180 + (120 * math.sin(CurTime() * 8)))), 0, 0)
-					draw.SimpleText(Tx3, "ActMod_a1", SW + asp + zTxt1 + zTxt2, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-				else
-					if aiSVR then
-						draw.SimpleText(Tx1, "ActMod_a6", SW + asp, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-						draw.SimpleText(Tx2, "ActMod_a6", SW + asp + zTxt1, sza, ply:KeyDown(IN_RELOAD) and Color(100, 255, 200, ttHuDA) or Color(255, 255, 100, math.min(ttHuDA,180 + (120 * math.sin(CurTime() * 8)))), 0, 0)
-						draw.SimpleText(Tx3, "ActMod_a6", SW + asp + zTxt1 + zTxt2, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-					else
-						draw.SimpleText(Tx1, "ActMod_a3", SW + asp, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-						draw.SimpleText(Tx2, "ActMod_a3", SW + asp + zTxt1, sza, TolPl2 and ply:KeyDown(IN_SPEED) and ply.atrky ~= -1 and Color(100, 255, 200, ttHuDA) or TolPl2 and ply:KeyDown(IN_USE) and ply.atrky == -1 and Color(255, 255, 100, ttHuDA) or Color(255, 255, 100, math.min(ttHuDA,180 + (120 * math.sin(CurTime() * 8)))), 0, 0)
-						draw.SimpleText(Tx3, "ActMod_a3", SW + asp + zTxt1 + zTxt2, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-						if ply.atrky == -1 then
-							local lo1,lo2 = (1 * math.sin(CurTime() * 50)) ,(-1 * math.sin(CurTime() * 42))
-							draw.SimpleText(Tx4, "ActMod_a3", SW +lo1 + asp + zTxt1 + zTxt2 + zTxt3, sza +lo2,  Color(255, 200, 100, ttHuDA), 0, 0)
-						else
-							draw.SimpleText(Tx4, "ActMod_a3", SW + asp + zTxt1 + zTxt2 + zTxt3, sza, TolPl2OK and ply:KeyDown(IN_USE) and Color(100, 255, 200, ttHuDA) or TolPl2 and not ply:KeyDown(IN_USE) and ply:KeyDown(IN_SPEED) and Color(255, 255, 100, math.min(ttHuDA,180 + (120 * math.sin(CurTime() * 8)))) or Color(155, 155, 50, ttHuDA), 0, 0)
-						end
-						draw.SimpleText(Tx5, "ActMod_a3", SW + asp + zTxt1 + zTxt2 + zTxt3 + zTxt4, sza, Color(255, 255, 255, ttHuDA), 0, 0)
-					end
-					if IsValid(Pl2) and Pl2:IsPlayer() then
-						WiDl = Pl2:Nick()
-						if Pl2.ActMod_TextNameAct then draw.SimpleTextOutlined(Pl2.ActMod_TextNameAct,"ChatFont",SW + ZW/2, SH +Za + (aiSVR and 46 or 34),Color(155, 255, 255, 255*ttHuDA),1,1,2,Color(0, 0, 0, 150*ttHuDA)) end
-						if isnumber(Pl2.ActMod_tActGetNJoing) and Pl2.ActMod_tActGetNJoing > 0 then draw.SimpleTextOutlined(Pl2:GetNWInt( "A_ActMod.GetNJoing",0) .." /".. Pl2.ActMod_tActGetNJoing,"ChatFont",SW + ZW -19, SH +Za - (aiSVR and 35 or 23),Color(155, 255, 255, 255*ttHuDA),1,1,1,Color(0, 0, 0, 150*ttHuDA)) end
-					else WiDl = ""
-					end
-					draw.SimpleText(WiDl, aiSVR and "ActMod_a1" or "ActMod_a4", SW + ZW -19+1, SH +Za + (aiSVR and 31 or 19), Color(0, 0, 0, ttHuDA), 2, 1)
-					draw.SimpleText(WiDl, aiSVR and "ActMod_a1" or "ActMod_a4", SW + ZW -19, SH +Za + (aiSVR and 30 or 18), Color(255, 255, 255, ttHuDA), 2, 1)
-				end
-				draw.SimpleText("AcrMod", aiSVR and "ActMod_a1" or "ActMod_a4", SW + 18+1, SH +Za-(aiSVR and 24 or 21), Color(0, 0, 0, ttHuDA), 0, 1)
-				draw.SimpleText("AcrMod", aiSVR and "ActMod_a1" or "ActMod_a4", SW + 18, SH +Za-(aiSVR and 23 or 20), Color(155, 255, 255, ttHuDA), 0, 1)
+        -- Globale HUD-Farben und Helligkeitslogik (1:1 wie CleanSkin_DrawHelpContent in custom_hud.lua)
+        local rawBgCol = (_G.GetCleanHUDTransparentColor and _G.GetCleanHUDTransparentColor()) or Color(28, 38, 52, 200)
+        local bgBoxCol = Color(rawBgCol.r, rawBgCol.g, rawBgCol.b, math.Round((rawBgCol.a or 200) * alphaFrac))
 
-			end
-		end
+        local rawKeyCol = (_G.GetCleanHUDKeyBoxColor and _G.GetCleanHUDKeyBoxColor()) or Color(20, 30, 42, 180)
+        local keyBoxCol = Color(rawKeyCol.r, rawKeyCol.g, rawKeyCol.b, math.Round((rawKeyCol.a or 180) * alphaFrac))
+
+        local rawBaseCol = (_G.GetCleanHUDBaseColor and _G.GetCleanHUDBaseColor()) or Color(49, 71, 94, 255)
+        local activeCol = Color(
+            math.Clamp(rawBaseCol.r + 35, 0, 255),
+            math.Clamp(rawBaseCol.g + 35, 0, 255),
+            math.Clamp(rawBaseCol.b + 35, 0, 255),
+            math.Round(235 * alphaFrac)
+        )
+
+        local rawTextCol = (_G.GetCleanHUDTextColor and _G.GetCleanHUDTextColor()) or Color(255, 255, 255, 255)
+        local isBrightHUD = (rawTextCol.r == 0 and rawTextCol.g == 0 and rawTextCol.b == 0) or ((rawBaseCol.r + rawBaseCol.g + rawBaseCol.b) >= 500)
+        local textCol = Color(rawTextCol.r, rawTextCol.g, rawTextCol.b, math.Round((rawTextCol.a or 255) * alphaFrac))
+        local plusCol = isBrightHUD and Color(40, 40, 40, math.Round(255 * alphaFrac)) or Color(200, 215, 230, math.Round(255 * alphaFrac))
+
+        local rad = math.min(math.Round(8 * scale), math.floor(hBox * 0.5))
+
+        draw.RoundedBox(rad, xBox, yBox, wBox, hBox, bgBoxCol)
+
+        local function DrawHUDStyledText(str, fnt, tx, ty, col, alignX, alignY)
+            if draw.AdvancedText then
+                draw.AdvancedText(str, fnt, tx, ty, col, alignX, alignY, not isBrightHUD, scale)
+            else
+                if not isBrightHUD then
+                    draw.SimpleText(str, fnt, tx + 1, ty + 1, Color(0, 0, 0, math.Round(col.a * 0.75)), alignX, alignY)
+                end
+                draw.SimpleText(str, fnt, tx, ty, col, alignX, alignY)
+            end
+        end
+
+        -- Key 1: SHIFT
+        local curX = xBox + padding
+        local curY = yBox + math.floor((hBox - boxKH) * 0.5)
+        local k1Col = isShiftDown and activeCol or keyBoxCol
+        draw.RoundedBox(4, curX, curY, boxK1W, boxKH, k1Col)
+        DrawHUDStyledText(key1, fontKey, curX + boxK1W * 0.5, curY + boxKH * 0.5, textCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+        -- Plus separator
+        curX = curX + boxK1W
+        DrawHUDStyledText("+", fontKey, curX + math.Round(6 * scale), curY + boxKH * 0.5, plusCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        curX = curX + math.Round(12 * scale)
+
+        -- Key 2: E
+        local k2Col = isEDown and activeCol or keyBoxCol
+        draw.RoundedBox(4, curX, curY, boxK2W, boxKH, k2Col)
+        DrawHUDStyledText(key2, fontKey, curX + boxK2W * 0.5, curY + boxKH * 0.5, textCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+        -- Action text
+        curX = curX + boxK2W + padding
+        DrawHUDStyledText(actionText, fontText, curX, yBox + hBox * 0.5, textCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
-	local TPly = ply.ActMod_TSndJ_LookTPly
-	if not IsValid(TPly) then return end
-	local pulse = (1 + math.sin(CurTime() * 8))*0.5
-	halo.Add({TPly}, Color(80,200,225,255*pulse), 2, 2, 1, true, true)
+end)
+
+-- Glow-Effekt bei Partner-Emotes im vorgesehenen PreDrawHalos-Hook mit dynamischer Team-/Rollenfarbe
+hook.Add("PreDrawHalos", "ActMod_PartnerHalo", function()
+    local ply = LocalPlayer()
+    if not IsValid(ply) or not ply:Alive() or ply:GetObserverMode() ~= 0 then return end
+    if GetConVarNumber("actmod_sv_alowdsyn") <= 0 or GetConVarNumber("actmod_sv_showhisyn") <= 0 or GetConVarNumber("actmod_cl_showhisyn") <= 0 then return end
+
+    local TPly = ply.ActMod_TSndJ_LookTPly
+    if IsValid(TPly) then
+        local pulse = 0.55 + 0.45 * ((1 + math.sin(CurTime() * 8)) * 0.5)
+        local teamCol = GetPlayerTeamGlowColor(TPly)
+        local glowCol = Color(
+            math.Round(teamCol.r * pulse),
+            math.Round(teamCol.g * pulse),
+            math.Round(teamCol.b * pulse),
+            255
+        )
+        halo.Add({TPly}, glowCol, 2.5, 2.5, 2, true, false)
+    end
 end)
 
 

@@ -120,16 +120,17 @@ function A_AM.ActMod:CGFont(baseFontName,Tab)
 	Tab = Tab or {}
 	Tab.weight = Tab.weight or 500
 	Tab.blursize = Tab.blursize or 0
-	antialias = antialias == nil and true or antialias
-	local key = baseFontName .. "_" .. tostring(Tab.size) .. "_" .. tostring(Tab.weight)
+	Tab.antialias = Tab.antialias == nil and true or Tab.antialias
+	Tab.extended = Tab.extended == nil and true or Tab.extended
+	local key = baseFontName .. "_" .. tostring(Tab.font or "") .. "_" .. tostring(Tab.size) .. "_" .. tostring(Tab.weight)
 	if not A_AM.ActMod.FontCache[key] then
 		surface.CreateFont(key, {font = Tab.font,size = Tab.size,weight = Tab.weight,blursize = Tab.blursize,antialias = Tab.antialias,extended = Tab.extended})
 		A_AM.ActMod.FontCache[key] = key
 	end
 	return A_AM.ActMod.FontCache[key]
 end
-A_AM.ActMod:CGFont("ActMod_a4_SC", {font = "Roboto Regular",size = ttw*0.016})
-A_AM.ActMod:CGFont("ActMod_a8_SC", {font = "Roboto Bold",size = ttw*0.03})
+A_AM.ActMod:CGFont("ActMod_a4_SC", {font = "Tahoma", size = math.Round(ttw * 0.016), weight = 700, antialias = true, extended = true})
+A_AM.ActMod:CGFont("ActMod_a8_SC", {font = "Tahoma", size = math.Round(ttw * 0.03), weight = 700, antialias = true, extended = true})
 
 
 
@@ -708,9 +709,9 @@ local function CalculateSmartTextPosition(target, viewerPos)
 	return basePos + Vector(0, 0, 10) + toViewer:Forward() * (30*pullStrength)
 end
 function A_AM.ActMod:HUD_3D_TaSynPly()
+	if (halo and halo.RenderedEntity and IsValid(halo.RenderedEntity())) or (outline and outline.RenderedEntity and IsValid(outline.RenderedEntity())) then return end
 	local p = LocalPlayer()
-	if GetConVarNumber("actmod_sv_alowdsyn") <= 0 or GetConVarNumber("actmod_sv_showhisyn") <= 0 or GetConVarNumber("actmod_cl_showhisyn") <= 0 or not p:Alive() or p:GetObserverMode() ~= 0 then return end
-	if !IsValid(p) then return end
+	if not IsValid(p) or GetConVarNumber("actmod_sv_alowdsyn") <= 0 or GetConVarNumber("actmod_sv_showhisyn") <= 0 or GetConVarNumber("actmod_cl_showhisyn") <= 0 or not p:Alive() or p:GetObserverMode() ~= 0 then return end
 	local t = p.ActMod_TSndJ_LookTPly
 	local dt = FrameTime()
 	if IsValid(t) then a = Lerp(dt * 8, a, 1) last = t else a = Lerp(dt * 12, a, 0) end
@@ -722,19 +723,24 @@ function A_AM.ActMod:HUD_3D_TaSynPly()
 		if isvector(AGHM) then Amaxs = AGHM end
 	end
 	local pos = last:GetPos()
-	local ang = last:GetAngles()
-	local tc = Color(80,200,225)
-	local col = isSafe and Color(tc.r, tc.g, tc.b, 255 * a) or Color(255, 80, 80, 255 * a)
-	local ePos,na,groundPos = EyePos(),6,pos + Vector(0, 0, 2)
+	local fnGetTeamGlow = _G.ActMod_GetPlayerTeamGlowColor
+	local tc = fnGetTeamGlow and fnGetTeamGlow(last) or ((GetCleanHUDBaseColor and GetCleanHUDBaseColor()) or Color(50, 200, 50))
+	local col = Color(tc.r, tc.g, tc.b, 255 * a)
+	local groundPos = pos + Vector(0, 0, 2)
 	local radius = Amaxs.y + math.sin(CurTime() * 2) * 3
 	local pulse = (1 + math.sin(CurTime() * 8))*0.5
+	local na = 36
 	render.SetColorMaterial()
-	cam.Start3D(ePos,EyeAngles())
-		for i = 0, na do
-			local angle1,angle2 = math.rad((i / na) * 360),math.rad(((i + 1) / na) * 360)
-			render.DrawBeam(groundPos + Vector(math.cos(angle1) * radius, math.sin(angle1) * radius, 0),groundPos + Vector(math.cos(angle2) * radius, math.sin(angle2) * radius, 0),1,0,1,Color(col.r, col.g, col.b, 100*pulse*a))
-		end
-	cam.End3D()
+	for i = 0, na - 1 do
+		local angle1 = math.rad((i / na) * 360)
+		local angle2 = math.rad(((i + 1) / na) * 360)
+		render.DrawBeam(
+			groundPos + Vector(math.cos(angle1) * radius, math.sin(angle1) * radius, 0),
+			groundPos + Vector(math.cos(angle2) * radius, math.sin(angle2) * radius, 0),
+			1.5, 0, 1,
+			Color(col.r, col.g, col.b, math.Round(180 * pulse * a))
+		)
+	end
 end
 
 

@@ -121,8 +121,8 @@ local function AA_JetAllAddTabCAct( ata )
 	for _k, afile in pairs(files) do
 		if string.sub(afile,-4) == ".lua" and file.Exists( "actmod/am_animc/".. afile, "LUA") then
 			local ok,err,crr,Trr,Ogr = IsLuaFileOnlyReturnTable("actmod/am_animc/".. afile, "LUA")
-			if ata and not A_AM.ActMod.GFilszFld then
-				if SERVER and ok or CLIENT and (not crr or crr ~= -2) then
+			if ata then
+				if (SERVER and (ok or not crr or crr ~= -2)) or (CLIENT and (not crr or crr ~= -2)) then
 					local GDfile = include("actmod/am_animc/".. afile) arint(afile,"[0] Reading file ...")
 					if GDfile and istable(GDfile) and not table.IsEmpty(GDfile) then arint(afile,"[1] Checking current and previous data ...")
 						local Gtb_1,Gtb_2 = A_AM.ActMod.GTabActO, A_AM.ActMod.GetAllAddTabAct["Act"]

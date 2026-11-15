@@ -108,6 +108,8 @@ function FireProblem( prob )
 	Problems[ probID ] = prob
 	if ( IsValid( ProblemsPanel ) ) then ProblemsPanel:ReceivedProblem( probID, prob ) end
 
+	hook.Call( "OnProblemReceived", nil, prob, probID )
+
 end
 
 local function FireError( str, realm, stack, addontitle, addonid )
@@ -258,7 +260,7 @@ timer.Create( "menu_check_for_problems", 1, 0, function()
 	end
 
 	if ( render.GetDXLevel() != 95 and render.GetDXLevel() != 90 ) then
-		FireProblem( { id = "mat_dxlevel", text = language.GetPhrase( "problem.mat_dxlevel" ):format( render.GetDXLevel() ), type = "config" } )
+		FireProblem( { id = "mat_dxlevel", text = language.FormatPhrase( "problem.mat_dxlevel", render.GetDXLevel() ), type = "config" } )
 	else
 		ClearProblem( "mat_dxlevel" )
 	end

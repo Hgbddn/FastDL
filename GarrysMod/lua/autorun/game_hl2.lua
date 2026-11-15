@@ -1,5 +1,6 @@
 
 local Category = ""
+local SubCategory = ""
 
 -- This is basically dupliacator.GenericDuplicatorFunction, but calls the relevant hooks
 -- Move this all to commands.lua?
@@ -28,6 +29,8 @@ local function ADD_ITEM_DUPEFUNC( ply, data )
 
 	ent:Activate()
 
+	ent.EntityName = data.EntityName
+
 	-- For hacked combine mines, they reset their skin
 	if ( data.Skin ) then ent:SetSkin( data.Skin ) end
 
@@ -55,6 +58,8 @@ local function ADD_WEAPON_DUPEFUNC( ply, data )
 	--duplicator.DoGenericPhysics( ent, ply, data )
 
 	ent:Activate()
+
+	ent.EntityName = data.EntityName
 
 	if ( IsValid( ply ) ) then
 		ent:SetCreator( ply )
@@ -86,33 +91,34 @@ local function ADD_NPC_WEAPON( class )
 end
 
 Category = "Half-Life 2"
+SubCategory = "#spawnmenu.category.ammo_items"
 
 -- Ammo
-ADD_ITEM( "item_ammo_ar2", -8 )
-ADD_ITEM( "item_ammo_ar2_large", -8 )
+ADD_ITEM( "item_ammo_ar2", -8, { SubCategory = SubCategory } )
+ADD_ITEM( "item_ammo_ar2_large", -8, { SubCategory = SubCategory } )
 
-ADD_ITEM( "item_ammo_pistol", -4 )
-ADD_ITEM( "item_ammo_pistol_large", -4 )
+ADD_ITEM( "item_ammo_pistol", -4, { SubCategory = SubCategory } )
+ADD_ITEM( "item_ammo_pistol_large", -4, { SubCategory = SubCategory } )
 
-ADD_ITEM( "item_ammo_357", -4 )
-ADD_ITEM( "item_ammo_357_large", -4 )
+ADD_ITEM( "item_ammo_357", -4, { SubCategory = SubCategory } )
+ADD_ITEM( "item_ammo_357_large", -4, { SubCategory = SubCategory } )
 
-ADD_ITEM( "item_ammo_smg1", -2 )
-ADD_ITEM( "item_ammo_smg1_large", -2 )
+ADD_ITEM( "item_ammo_smg1", -2, { SubCategory = SubCategory } )
+ADD_ITEM( "item_ammo_smg1_large", -2, { SubCategory = SubCategory } )
 
-ADD_ITEM( "item_ammo_smg1_grenade", -10 )
-ADD_ITEM( "item_ammo_crossbow", -10 )
-ADD_ITEM( "item_box_buckshot", -10 )
-ADD_ITEM( "item_ammo_ar2_altfire", -2 )
-ADD_ITEM( "item_rpg_round", -10 )
+ADD_ITEM( "item_ammo_smg1_grenade", -10, { SubCategory = SubCategory } )
+ADD_ITEM( "item_ammo_crossbow", -10, { SubCategory = SubCategory } )
+ADD_ITEM( "item_box_buckshot", -10, { SubCategory = SubCategory } )
+ADD_ITEM( "item_ammo_ar2_altfire", -2, { SubCategory = SubCategory } )
+ADD_ITEM( "item_rpg_round", -10, { SubCategory = SubCategory } )
 
 -- Dynamic materials; gives player what he needs most (health, shotgun ammo, suit energy, etc)
 -- ADD_ITEM( "item_dynamic_resupply" )
 
 -- Items
-ADD_ITEM( "item_battery", -4 )
-ADD_ITEM( "item_healthkit", -8 )
-ADD_ITEM( "item_healthvial", -4 )
+ADD_ITEM( "item_battery", -4, { SubCategory = SubCategory } )
+ADD_ITEM( "item_healthkit", -8, { SubCategory = SubCategory } )
+ADD_ITEM( "item_healthvial", -4, { SubCategory = SubCategory } )
 ADD_ITEM( "item_suitcharger" )
 ADD_ITEM( "item_healthcharger" )
 ADD_ITEM( "item_suit", 0 )

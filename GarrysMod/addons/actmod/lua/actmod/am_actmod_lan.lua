@@ -71,7 +71,43 @@ if CLIENT then
 		aR:R_T( GetConVarString( "actmod_cl_lang" ) )
 	end
 	cvars.AddChangeCallback( "actmod_cl_lang", function( _, _, newLang ) aR:R_T( newLang ) end )
+-- punkt 3 clean code
+	-- Punkt 3: Spracheinstellung aus dem F1-Menue (ttt_language / LANG) automatisch uebernehmen
+	local function SyncActModHUDLanguage()
+		local tttLang = (LANG and LANG.GetLanguage and string.lower(LANG.GetLanguage() or "")) or ""
+		local cvLang = GetConVar("ttt_language")
+		local cvStr = cvLang and string.lower(cvLang:GetString() or "") or ""
+		local cur = (cvStr ~= "" and cvStr) or tttLang
+		if cur == "" then
+			cur = string.lower(GetConVarString("gmod_language") or "")
+		end
 
+		local target = "en"
+		if cur == "german" or cur == "deutsch" or cur == "de" then
+			target = "de"
+		elseif cur == "russian" or cur == "ru" then
+			target = "ru"
+		elseif cur == "turkish" or cur == "tr" then
+			target = "tr"
+		elseif string.find(cur, "chinese") or cur == "zh-cn" then
+			target = "zh-CN"
+		end
+
+		if aR.ALang ~= target then
+			aR:R_T(target, true)
+		end
+	end
+
+	SyncActModHUDLanguage()
+	cvars.AddChangeCallback("ttt_language", function()
+		SyncActModHUDLanguage()
+	end, "ActMod_TTT2LangSync")
+	hook.Add("TTT2LanguageChanged", "ActMod_TTT2LangSyncHook", function()
+		SyncActModHUDLanguage()
+	end)
+	hook.Add("InitPostEntity", "ActMod_TTT2LangSyncInit", function()
+		timer.Simple(0.5, SyncActModHUDLanguage)
+	end)
 end
 
 function aR:T(at1,sLang)
