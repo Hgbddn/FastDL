@@ -74,6 +74,29 @@ local function TrackConVar(cvarName)
         if isApplyingSavedCvars then return end
         if tostring(oldVal) == tostring(newVal) then return end
 
+        if name == "ttt_session_limits_mode" and tostring(newVal) == "0" then
+            local tb = debug.traceback("", 2)
+            MsgN("[TTT2 Persistent Settings] ttt_session_limits_mode wurde auf 0 geaendert! Quelle:\n" .. tb)
+            local lowerTb = string.lower(tb)
+            local isAdminAction = string.find(lowerTb, "ttt2_sync_cvar", 1, true)
+                or string.find(lowerTb, "ulx", 1, true)
+                or string.find(lowerTb, "xgui", 1, true)
+            if not isAdminAction then
+                local wanted = savedCvars[name] or "1"
+                if tostring(wanted) ~= "0" then
+                    timer.Simple(0, function()
+                        local cv = GetConVar(name)
+                        if cv and cv:GetString() ~= tostring(wanted) then
+                            isApplyingSavedCvars = true
+                            cv:SetString(tostring(wanted))
+                            isApplyingSavedCvars = false
+                        end
+                    end)
+                    return
+                end
+            end
+        end
+
         savedCvars[name] = tostring(newVal)
         SavePersistentCvarsToDisk()
     end, "TTT2PersistentSettingsCallback")
@@ -82,6 +105,19 @@ end
 -- Alle von Addons/Gamemode über CreateConVar registrierten ConVars automatisch überwachen
 local origCreateConVar = _G.CreateConVar
 _G.CreateConVar = function(name, default, flags, helptext, min, max)
+    if name == "ttt_session_limits_mode" and flags ~= nil then
+        if isnumber(flags) then
+            flags = bit.band(flags, bit.bnot(FCVAR_NOTIFY))
+        elseif istable(flags) then
+            local cleanFlags = {}
+            for _, f in ipairs(flags) do
+                if f ~= FCVAR_NOTIFY then
+                    cleanFlags[#cleanFlags + 1] = f
+                end
+            end
+            flags = cleanFlags
+        end
+    end
     local cv = origCreateConVar(name, default, flags, helptext, min, max)
     if isstring(name) then
         TrackConVar(name)
