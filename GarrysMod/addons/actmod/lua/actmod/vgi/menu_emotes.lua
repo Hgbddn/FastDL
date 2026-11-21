@@ -139,7 +139,7 @@ end
 function A_AM.ActMod:ClearWMaterialCache(ata)
 	if not ata then
 		for name, _ in pairs(hook.GetTable()["HUDPaint"] or {}) do
-			if string.StartWith(name, "awmat_|") then hook.Remove("HUDPaint", name) end
+			if isstring(name) and string.StartWith(name, "awmat_|") then hook.Remove("HUDPaint", name) end
 		end
     end
     A_AM.ActMod.wMatCache = {}
